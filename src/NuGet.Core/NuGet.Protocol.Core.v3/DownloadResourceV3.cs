@@ -127,15 +127,10 @@ namespace NuGet.Protocol.Core.v3
 
             if (uri != null)
             {
-                return await GetDownloadResultUtility.GetDownloadResultAsync(_client, identity, uri, settings, log, token);
+                return await GetDownloadResultUtility.GetDownloadResultAsync(_client, identity, uri, settings, logger, token);
             }
 
             return null;
         }
-            ILogger log,
-            log.LogVerbose($"  GET: {uri}");
-                    using (var packageStream = await _client.GetStreamAsync(uri, log, token))
-                            log,
-                    log.LogWarning(message);
     }
 }
