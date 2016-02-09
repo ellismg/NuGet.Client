@@ -70,8 +70,8 @@ Invoke-BuildStep 'Restoring solution packages' { Restore-SolutionPackages } `
     -skip:$SkipRestore `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Installing runtime' { Install-DNX CoreCLR; Install-DNX CLR -Default } `
-    -ev +BuildErrors
+# Invoke-BuildStep 'Installing dotnet CLI' { Install-DotnetCLI } `
+#    -ev +BuildErrors
 
 Invoke-BuildStep 'Enabling delayed signing' {
         param($MSPFXPath, $NuGetPFXPath) Enable-DelaySigning $MSPFXPath $NuGetPFXPath

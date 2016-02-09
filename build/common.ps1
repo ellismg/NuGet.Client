@@ -4,8 +4,6 @@ $DefaultConfiguration = 'debug'
 $ValidReleaseLabels = 'Release','rtm', 'rc', 'beta', 'local'
 $DefaultReleaseLabel = 'local'
 
-$DefaultDnxVersion = '1.0.0-rc1-update1'
-$DefaultDnxArch = 'x86'
 $NuGetClientRoot = Split-Path -Path $PSScriptRoot -Parent
 $MSBuildExe = Join-Path ${env:ProgramFiles(x86)} 'MSBuild\14.0\Bin\msbuild.exe'
 $NuGetExe = Join-Path $NuGetClientRoot '.nuget\nuget.exe'
@@ -13,6 +11,8 @@ $ILMerge = Join-Path $NuGetClientRoot 'packages\ILMerge.2.14.1208\tools\ILMerge.
 $DnvmCmd = Join-Path $env:USERPROFILE '.dnx\bin\dnvm.cmd'
 $Nupkgs = Join-Path $NuGetClientRoot nupkgs
 $Artifacts = Join-Path $NuGetClientRoot artifacts
+$NuGetCoreSln = Join-Path $NuGetClientRoot 'NuGet.Core.sln'
+$NuGetClientSln = Join-Path $NuGetClientRoot 'NuGet.Client.sln'
 
 Function Read-PackageSources {
     param($NuGetConfig)
@@ -145,8 +145,8 @@ Function Install-DNVM {
     }
 }
 
-# Makes sure the needed DNX runtimes installed
-Function Install-DNX {
+# Makes sure the needed dotnet cli is installed
+Function Install-DotnetCLI {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$True, Position=0)]
@@ -297,71 +297,16 @@ Function Restore-SolutionPackages{
     }
 }
 
-# Restore projects individually
-Function Restore-XProject {
-    [CmdletBinding()]
-    param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
-        [string[]]$XProjectLocations
-    )
-    Begin {}
-    Process {
-        $XProjectLocations | %{
-            $projectJsonFile = Join-Path $_ 'project.json'
-            $opts = 'restore', $projectJsonFile
-            $opts += $PackageSources | %{ '-s', $_ }
-            if (-not $VerbosePreference) {
-                $opts += '--quiet'
-            }
-
-            Trace-Log "Restoring packages @""$_"""
-            Verbose-Log "dnu $opts"
-            & dnu $opts 2>&1
-            if (-not $?) {
-                Error-Log "Restore failed @""$_"". Code: $LASTEXITCODE"
-            }
-        }
-    }
-    End {}
-}
-
-# Restore in parallel first to speed things up
-Function Restore-XProjectsFast {
-    [CmdletBinding()]
-    param(
-        [string]$XProjectsLocation
-    )
-    $opts = 'restore', $XProjectsLocation, '--parallel', '--ignore-failed-sources'
-    $opts += $PackageSources | %{ '-s', $_ }
-    if (-not $VerbosePreference) {
-        $opts += '--quiet'
-    }
-
-    Trace-Log "Restoring packages @""$XProjectsLocation"""
-    Verbose-Log "dnu $opts"
-    & dnu $opts 2>&1
-    if (-not $?) {
-        Error-Log "Restore failed @""$XProjectsLocation"". Code: $LASTEXITCODE"
-    }
-}
-
-Function Find-XProjects($XProjectsLocation) {
-    Get-ChildItem $XProjectsLocation -Recurse -Filter '*.xproj' |`
-        %{ Split-Path $_.FullName -Parent }
-}
-
+# Restore nuget.core.sln projects
 Function Restore-XProjects {
-    [CmdletBinding()]
-    param(
-        [string]$XProjectsLocation,
-        [switch]$Fast
-    )
-    if ($Fast) {
-        Restore-XProjectsFast $XProjectsLocation
-    }
-    else {
-        $xprojects = Find-XProjects $XProjectsLocation
-        $xprojects | Restore-XProject
+
+    $opts = 'restore', $NuGetCoreSln, '-Verbosity', 'quiet'
+
+    Trace-Log "Restoring packages for @""$NuGetCoreSln"""
+    Verbose-Log "nuget.exe $opts"
+    & $nugetExe $opts 2>&1
+    if (-not $?) {
+        Error-Log "Restore failed @""$_"". Code: $LASTEXITCODE"
     }
 }
 
