@@ -41,6 +41,9 @@ namespace NuGet.Protocol.Core.v3
             yield return new Lazy<INuGetResourceProvider>(() => new ListCommandResourceV3Provider());
             yield return new Lazy<INuGetResourceProvider>(() => new PushCommandResourceV2Provider());
             yield return new Lazy<INuGetResourceProvider>(() => new PushCommandResourceV3Provider());
+            yield return new Lazy<INuGetResourceProvider>(() => new DependencyInfoResourceV2FeedProvider());
+            yield return new Lazy<INuGetResourceProvider>(() => new DownloadResourceV2FeedProvider());
+            yield return new Lazy<INuGetResourceProvider>(() => new MetadataResourceV2FeedProvider());
             yield break;
         }
     }
