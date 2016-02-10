@@ -218,22 +218,10 @@ Function Format-BuildNumber([int]$BuildNumber) {
 Function Clear-PackageCache {
     [CmdletBinding()]
     param()
-    Trace-Log 'Removing DNX packages'
-
-    if (Test-Path $env:userprofile\.dnx\packages) {
-        rm -r $env:userprofile\.dnx\packages -Force
-    }
-
     Trace-Log 'Removing .NUGET packages'
 
     if (Test-Path $env:userprofile\.nuget\packages) {
         rm -r $env:userprofile\.nuget\packages -Force
-    }
-
-    Trace-Log 'Removing DNU cache'
-
-    if (Test-Path $env:localappdata\dnu\cache) {
-        rm -r $env:localappdata\dnu\cache -Force
     }
 
     Trace-Log 'Removing NuGet web cache'
@@ -310,7 +298,12 @@ Function Restore-XProjects {
     }
 }
 
-Function Invoke-DnuPack {
+Function Find-XProjects($XProjectsLocation) {
+    Get-ChildItem $XProjectsLocation -Recurse -Filter '*.xproj' |`
+        %{ Split-Path $_.FullName -Parent }
+}
+
+Function Invoke-DotnetPack {
     [CmdletBinding()]
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -341,14 +334,11 @@ Function Invoke-DnuPack {
             $opts += $_
             $opts += '--configuration', $Configuration
             if ($Output) {
-                $opts += '--out', (Join-Path $Output (Split-Path $_ -Leaf))
-            }
-            if (-not $VerbosePreference) {
-                $opts += '--quiet'
+                $opts += '--output', (Join-Path $Output (Split-Path $_ -Leaf))
             }
 
-            Verbose-Log "dnu $opts"
-            &dnu $opts 2>&1
+            Verbose-Log "dotnet $opts"
+            &dotnet $opts 2>&1
             if (-not $?) {
                 Error-Log "Pack failed @""$_"". Code: $LASTEXITCODE"
             }
@@ -373,7 +363,7 @@ Function Build-CoreProjects {
     }
 
     $xprojects = Find-XProjects $XProjectsLocation
-    $xprojects | Invoke-DnuPack -config $Configuration -label $ReleaseLabel -build $BuildNumber -out $Artifacts
+    $xprojects | Invoke-DotnetPack -config $Configuration -label $ReleaseLabel -build $BuildNumber -out $Artifacts
 
     ## Moving nupkgs
     Trace-Log "Moving the packages to $Nupkgs"
