@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3;
 using NuGet.Versioning;
 
 namespace NuGet.Protocol
@@ -13,8 +15,9 @@ namespace NuGet.Protocol
     public class MetadataResourceV2Feed : MetadataResource
     {
         private readonly V2FeedParser _feedParser;
+        private readonly SourceRepository _source;
 
-        public MetadataResourceV2Feed(V2FeedParser feedParser)
+        public MetadataResourceV2Feed(V2FeedParser feedParser, SourceRepository source)
         {
             if (_feedParser == null)
             {
@@ -22,6 +25,7 @@ namespace NuGet.Protocol
             }
 
             _feedParser = feedParser;
+            _source = source;
         }
 
         public override async Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(IEnumerable<string> packageIds, bool includePrerelease, bool includeUnlisted, ILogger log, CancellationToken token)
@@ -62,20 +66,34 @@ namespace NuGet.Protocol
         {
             token.ThrowIfCancellationRequested();
 
-            var packages = await _feedParser.FindPackagesByIdAsync(packageId, log, token);
+            try
+            {
+                var packages = await _feedParser.FindPackagesByIdAsync(packageId, log, token);
 
-            return packages.Where(p => includeUnlisted || p.IsListed)
-                .Select(p => p.Version)
-                .Where(v => includePrerelease || !v.IsPrerelease).ToArray();
+                return packages.Where(p => includeUnlisted || p.IsListed)
+                               .Select(p => p.Version)
+                               .Where(v => includePrerelease || !v.IsPrerelease).ToArray();
+            }
+            catch (Exception ex)
+            {
+                throw new FatalProtocolException(string.Format(CultureInfo.CurrentCulture, Strings.Protocol_PackageMetadataError, packageId, _source), ex);
+            }
         }
 
         public override async Task<bool> Exists(PackageIdentity identity, bool includeUnlisted, ILogger log, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
-            var package = await _feedParser.GetPackage(identity, log, token);
+            try
+            {
+                var package = await _feedParser.GetPackage(identity, log, token);
 
-            return package != null;
+                return package != null;
+            }
+            catch (Exception ex)
+            {
+                throw new FatalProtocolException(string.Format(CultureInfo.CurrentCulture, Strings.Protocol_PackageMetadataError, packageId, _source), ex);
+            }
         }
 
         public override async Task<bool> Exists(string packageId, bool includePrerelease, bool includeUnlisted, ILogger log, CancellationToken token)

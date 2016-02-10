@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using NuGet.Frameworks;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3;
 using NuGet.Versioning;
 
 namespace NuGet.Protocol
@@ -35,10 +37,20 @@ namespace NuGet.Protocol
             CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
+            try
+            {
+                var packageInfo = await _feedParser.GetPackage(package, log, token);
 
-            var packageInfo = await _feedParser.GetPackage(package, log, token);
+                return CreateDependencyInfo(packageInfo, projectFramework);
+            }
+            catch (Exception ex)
+            {
+                // Wrap exceptions coming from the server with a user friendly message
+                var error = String.Format(CultureInfo.CurrentUICulture, Strings.Protocol_PackageMetadataError, package, _source);
 
-            return CreateDependencyInfo(packageInfo, projectFramework);
+                throw new FatalProtocolException(error, ex);
+            }
+
         }
 
         public override async Task<IEnumerable<SourcePackageDependencyInfo>> ResolvePackages(
@@ -49,16 +61,26 @@ namespace NuGet.Protocol
         {
             token.ThrowIfCancellationRequested();
 
-            var packages = await _feedParser.FindPackagesByIdAsync(packageId, log, token);
-
-            var results = new List<SourcePackageDependencyInfo>();
-
-            foreach (var package in packages)
+            try
             {
-                results.Add(CreateDependencyInfo(package, projectFramework));
-            }
+                var packages = await _feedParser.FindPackagesByIdAsync(packageId, log, token);
 
-            return results;
+                var results = new List<SourcePackageDependencyInfo>();
+
+                foreach (var package in packages)
+                {
+                    results.Add(CreateDependencyInfo(package, projectFramework));
+                }
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                // Wrap exceptions coming from the server with a user friendly message
+                var error = String.Format(CultureInfo.CurrentUICulture, Strings.Protocol_PackageMetadataError, packageId, _source);
+
+                throw new FatalProtocolException(error, ex);
+            }
         }
 
         /// <summary>
