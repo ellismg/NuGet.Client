@@ -200,5 +200,40 @@ namespace NuGet.Protocol.Core.v3.Tests
 
             Assert.Equal(100, packages.Count());
         }
+
+        [Fact]
+        public async Task V2FeedParser_GetPackage()
+        {
+            Func<Task<HttpHandlerResource>> factory = () =>
+               Task.FromResult<HttpHandlerResource>(new TestHttpHandler(new TestHandler()));
+
+            var httpSource = new HttpSource(
+                new Configuration.PackageSource("http://testsource/v2/"),
+                factory);
+
+            V2FeedParser parser = new V2FeedParser(httpSource, "http://testsource/v2/");
+
+            var package = await parser.GetPackage(new PackageIdentity("WindowsAzure.Storage", new NuGetVersion("4.3.2-preview")), NullLogger.Instance, CancellationToken.None);
+
+            Assert.Equal("WindowsAzure.Storage", package.Id);
+            Assert.Equal("4.3.2-preview", package.Version.ToNormalizedString());
+            Assert.Equal("WindowsAzure.Storage", package.Title);
+            Assert.Equal("Microsoft", String.Join(",", package.Authors));
+            Assert.Equal("", String.Join(",", package.Owners));
+            Assert.True(package.Description.StartsWith("This client library enables"));
+            Assert.Equal(3916917, package.DownloadCountAsInt);
+            Assert.Equal("https://www.nuget.org/api/v2/package/WindowsAzure.Storage/4.3.2-preview", package.DownloadUrl);
+            Assert.Equal("http://go.microsoft.com/fwlink/?LinkID=288890", package.IconUrl);
+            Assert.Equal("http://go.microsoft.com/fwlink/?LinkId=331471", package.LicenseUrl);
+            Assert.Equal("http://go.microsoft.com/fwlink/?LinkId=235168", package.ProjectUrl);
+            Assert.Equal(DateTimeOffset.Parse("2014-11-12T22:19:16.297"), package.Published.Value);
+            Assert.Equal("https://www.nuget.org/package/ReportAbuse/WindowsAzure.Storage/4.3.2-preview", package.ReportAbuseUrl);
+            Assert.True(package.RequireLicenseAcceptance);
+            Assert.Equal("A client library for working with Microsoft Azure storage services including blobs, files, tables, and queues.", package.Summary);
+            Assert.Equal("Microsoft Azure Storage Table Blob File Queue Scalable windowsazureofficial", package.Tags);
+            Assert.Equal("Microsoft.Data.OData:5.6.3:aspnetcore50|Microsoft.Data.Services.Client:5.6.3:aspnetcore50|System.Spatial:5.6.3:aspnetcore50|System.Collections:4.0.10-beta-22231:aspnetcore50|System.Collections.Concurrent:4.0.0-beta-22231:aspnetcore50|System.Collections.Specialized:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.Debug:4.0.10-beta-22231:aspnetcore50|System.Diagnostics.Tools:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.TraceSource:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.Tracing:4.0.10-beta-22231:aspnetcore50|System.Dynamic.Runtime:4.0.0-beta-22231:aspnetcore50|System.Globalization:4.0.10-beta-22231:aspnetcore50|System.IO:4.0.10-beta-22231:aspnetcore50|System.IO.FileSystem:4.0.0-beta-22231:aspnetcore50|System.IO.FileSystem.Primitives:4.0.0-beta-22231:aspnetcore50|System.Linq:4.0.0-beta-22231:aspnetcore50|System.Linq.Expressions:4.0.0-beta-22231:aspnetcore50|System.Linq.Queryable:4.0.0-beta-22231:aspnetcore50|System.Net.Http:4.0.0-beta-22231:aspnetcore50|System.Net.Primitives:4.0.10-beta-22231:aspnetcore50|System.Reflection:4.0.10-beta-22231:aspnetcore50|System.Reflection.Extensions:4.0.0-beta-22231:aspnetcore50|System.Reflection.TypeExtensions:4.0.0-beta-22231:aspnetcore50|System.Runtime:4.0.20-beta-22231:aspnetcore50|System.Runtime.Extensions:4.0.10-beta-22231:aspnetcore50|System.Runtime.InteropServices:4.0.20-beta-22231:aspnetcore50|System.Runtime.Serialization.Primitives:4.0.0-beta-22231:aspnetcore50|System.Runtime.Serialization.Xml:4.0.10-beta-22231:aspnetcore50|System.Security.Cryptography.Encoding:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Encryption:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Hashing:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Hashing.Algorithms:4.0.0-beta-22231:aspnetcore50|System.Text.Encoding:4.0.10-beta-22231:aspnetcore50|System.Text.Encoding.Extensions:4.0.10-beta-22231:aspnetcore50|System.Text.RegularExpressions:4.0.10-beta-22231:aspnetcore50|System.Threading:4.0.0-beta-22231:aspnetcore50|System.Threading.Tasks:4.0.10-beta-22231:aspnetcore50|System.Threading.Thread:4.0.0-beta-22231:aspnetcore50|System.Threading.ThreadPool:4.0.10-beta-22231:aspnetcore50|System.Threading.Timer:4.0.0-beta-22231:aspnetcore50|System.Xml.ReaderWriter:4.0.10-beta-22231:aspnetcore50|System.Xml.XDocument:4.0.0-beta-22231:aspnetcore50|System.Xml.XmlSerializer:4.0.0-beta-22231:aspnetcore50|Microsoft.Data.OData:5.6.3:aspnet50|Microsoft.Data.Services.Client:5.6.3:aspnet50|System.Spatial:5.6.3:aspnet50|Microsoft.Data.OData:5.6.2:net40-Client|Newtonsoft.Json:5.0.8:net40-Client|Microsoft.Data.Services.Client:5.6.2:net40-Client|Microsoft.WindowsAzure.ConfigurationManager:1.8.0.0:net40-Client|Microsoft.Data.OData:5.6.2:win80|Microsoft.Data.OData:5.6.2:wpa|Microsoft.Data.OData:5.6.2:wp80|Newtonsoft.Json:5.0.8:wp80", package.Dependencies);
+            Assert.Equal(6, package.DependencySets.Count());
+            Assert.Equal("aspnetcore50", package.DependencySets.First().TargetFramework.GetShortFolderName());
+        }
     }
 }

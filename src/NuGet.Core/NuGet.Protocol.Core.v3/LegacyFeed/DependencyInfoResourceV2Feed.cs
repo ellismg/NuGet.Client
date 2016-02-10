@@ -36,9 +36,9 @@ namespace NuGet.Protocol
         {
             token.ThrowIfCancellationRequested();
 
-            var packages = await _feedParser.FindPackagesByIdAsync(package.Id, log, token);
+            var packageInfo = await _feedParser.GetPackage(package, log, token);
 
-            return CreateDependencyInfo(packages.Where(p => p.Version.Equals(package.Version)).FirstOrDefault(), projectFramework);
+            return CreateDependencyInfo(packageInfo, projectFramework);
         }
 
         public override async Task<IEnumerable<SourcePackageDependencyInfo>> ResolvePackages(

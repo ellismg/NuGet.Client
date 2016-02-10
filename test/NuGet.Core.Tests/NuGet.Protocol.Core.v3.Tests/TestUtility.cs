@@ -64,6 +64,10 @@ namespace NuGet.Protocol.Core.v3.Tests
             {
                 msg.Content = new TestContent(SearchData.SearchAzureData100);
             }
+            else if (request.RequestUri.AbsoluteUri == "http://testsource/v2/Packages(Id='WindowsAzure.Storage',Version='4.3.2-preview')")
+            {
+                msg.Content = new TestContent(GetPackageData.WindowsAzureStorage);
+            }
             else
             {
                 msg = new HttpResponseMessage(HttpStatusCode.NotFound);

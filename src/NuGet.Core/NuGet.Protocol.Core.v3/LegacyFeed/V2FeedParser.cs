@@ -25,6 +25,7 @@ namespace NuGet.Protocol
         private const string DataServicesNS = "http://schemas.microsoft.com/ado/2007/08/dataservices";
         private const string FindPackagesByIdFormat = "/FindPackagesById()?Id='{0}'";
         private const string SearchEndPointFormat = "/Search()?$filter={0}&searchTerm='{1}'&targetFramework='{2}'&includePrerelease={3}&$skip={4}&$top={5}";
+        private const string GetPackagesFormat = "/Packages(Id='{0}',Version='{1}')";
         private const string IsLatestVersionFilterFlag = "IsLatestVersion";
         private const string IsAbsoluteLatestVersionFilterFlag = "IsAbsoluteLatestVersion";
 
@@ -57,6 +58,7 @@ namespace NuGet.Protocol
         private readonly PackageSource _source;
         private readonly string _findPackagesByIdFormat;
         private readonly string _searchEndPointFormat;
+        private readonly string _getPackagesFormat;
 
         public V2FeedParser(HttpSource httpSource, string sourceUrl)
             : this(httpSource, new PackageSource(sourceUrl))
@@ -85,6 +87,7 @@ namespace NuGet.Protocol
             _source = source;
             _findPackagesByIdFormat = source.Source.TrimEnd('/') + FindPackagesByIdFormat;
             _searchEndPointFormat = source.Source.TrimEnd('/') + SearchEndPointFormat;
+            _getPackagesFormat = source.Source.TrimEnd('/') + GetPackagesFormat;
         }
 
         /// <summary>
@@ -95,10 +98,14 @@ namespace NuGet.Protocol
             ILogger log,
             CancellationToken token)
         {
-            // TODO add support for the exact call
-            var packages = await FindPackagesByIdAsync(package.Id, log, token);
+            if (package == null)
+            {
+                throw new ArgumentException("PackageIdentity");
+            }
 
-            return packages.FirstOrDefault(entry => entry.Version == package.Version);
+            var uri = String.Format(CultureInfo.InvariantCulture, _getPackagesFormat, package.Id, package.Version);
+            var packages = await QueryV2Feed(uri, package.Id, log, token);
+            return packages.FirstOrDefault();
         }
 
         /// <summary>
@@ -151,11 +158,15 @@ namespace NuGet.Protocol
         /// </summary>
         private IEnumerable<V2FeedPackageInfo> ParsePage(XDocument doc, string id)
         {
-            var result = doc.Root
-                .Elements(_xnameEntry)
-                .Select(x => ParsePackage(id, x));
-
-            return result;
+            if (doc.Root.Name == _xnameEntry)
+            {
+                return new List<V2FeedPackageInfo> { ParsePackage(id, doc.Root) };
+            }
+            else
+            {
+                return doc.Root.Elements(_xnameEntry)
+                    .Select(x => ParsePackage(id, x));
+            }
         }
 
         /// <summary>

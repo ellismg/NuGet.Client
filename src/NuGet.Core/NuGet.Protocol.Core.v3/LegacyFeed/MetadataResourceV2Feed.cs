@@ -73,9 +73,9 @@ namespace NuGet.Protocol
         {
             token.ThrowIfCancellationRequested();
 
-            var versions = await GetVersions(identity.Id, true, includeUnlisted, log, token);
+            var package = await _feedParser.GetPackage(identity, log, token);
 
-            return versions.Any(e => VersionComparer.Default.Equals(identity.Version, e));
+            return package != null;
         }
 
         public override async Task<bool> Exists(string packageId, bool includePrerelease, bool includeUnlisted, ILogger log, CancellationToken token)

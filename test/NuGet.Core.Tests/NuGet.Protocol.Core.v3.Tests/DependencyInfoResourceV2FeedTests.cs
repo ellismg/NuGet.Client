@@ -57,7 +57,7 @@ namespace NuGet.Protocol.Core.v3.Tests
                                                                             NullLogger.Instance,
                                                                             CancellationToken.None);
 
-            Assert.Equal(6, dependencyInfo.Dependencies.Count());
+            Assert.Equal(43, dependencyInfo.Dependencies.Count());
         }
     }
 }

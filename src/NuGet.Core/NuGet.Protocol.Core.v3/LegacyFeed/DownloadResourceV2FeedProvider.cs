@@ -8,7 +8,7 @@ namespace NuGet.Protocol
     public class DownloadResourceV2FeedProvider : ResourceProvider
     {
         public DownloadResourceV2FeedProvider()
-            : base(typeof(DownloadResource), "DownloadResourceV2Provider", NuGetResourceProviderPositions.Last)
+            : base(typeof(DownloadResource), "DownloadResourceV2FeedProvider", "DownloadResourceV2Provider")
         {
         }
 
