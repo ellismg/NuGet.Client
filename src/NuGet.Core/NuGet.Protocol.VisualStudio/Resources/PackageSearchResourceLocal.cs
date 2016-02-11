@@ -13,21 +13,21 @@ using NuGet.Versioning;
 
 namespace NuGet.Protocol.VisualStudio
 {
-    public class PackageSearchResourceV2 : PackageSearchResource
+    public class PackageSearchResourceLocal : PackageSearchResource
     {
         private IPackageRepository V2Client { get; }
 
-        public PackageSearchResourceV2(V2Resource resource)
+        public PackageSearchResourceLocal(V2Resource resource)
         {
             V2Client = resource.V2Client;
         }
 
-        public PackageSearchResourceV2(IPackageRepository repo)
+        public PackageSearchResourceLocal(IPackageRepository repo)
         {
             V2Client = repo;
         }
 
-        public async override Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, CancellationToken cancellationToken)
+        public async override Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, Logging.ILogger log, CancellationToken cancellationToken)
         {
             return await Task.Run(() =>
             {

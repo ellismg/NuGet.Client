@@ -4,21 +4,23 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v2;
 
-namespace NuGet.Protocol.Core.v2
+namespace NuGet.Protocol.VisualStudio
 {
-    public class DependencyInfoResourceV2Provider : V2ResourceProvider
+    public class UIMetadataResourceLocalProvider : V2ResourceProvider
     {
-        public DependencyInfoResourceV2Provider()
-            : base(typeof(DependencyInfoResource), "DependencyInfoResourceV2Provider", NuGetResourceProviderPositions.Last)
+        public UIMetadataResourceLocalProvider()
+            : base(typeof(PackageMetadataResource),
+                  nameof(UIMetadataResourceLocalProvider),
+                  NuGetResourceProviderPositions.Last)
         {
         }
 
         public override async Task<Tuple<bool, INuGetResource>> TryCreate(SourceRepository source, CancellationToken token)
         {
-            DependencyInfoResource DependencyInfoResourceV2 = null;
+            PackageMetadataResourceLocal resource = null;
 
             if (FeedTypeUtility.GetFeedType(source.PackageSource) == FeedType.FileSystem)
             {
@@ -26,11 +28,11 @@ namespace NuGet.Protocol.Core.v2
 
                 if (v2repo != null)
                 {
-                    DependencyInfoResourceV2 = new DependencyInfoResourceV2(v2repo, source);
+                    resource = new PackageMetadataResourceLocal(v2repo);
                 }
             }
 
-            return Tuple.Create<bool, INuGetResource>(DependencyInfoResourceV2 != null, DependencyInfoResourceV2);
+            return new Tuple<bool, INuGetResource>(resource != null, resource);
         }
     }
 }

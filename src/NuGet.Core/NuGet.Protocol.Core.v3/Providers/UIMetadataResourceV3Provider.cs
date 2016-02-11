@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
 
-namespace NuGet.Protocol.VisualStudio
+namespace NuGet.Protocol
 {
     public class UIMetadataResourceV3Provider : ResourceProvider
     {
         public UIMetadataResourceV3Provider()
-            : base(typeof(PackageMetadataResource), "UIMetadataResourceV3Provider", "UIMetadataResourceV2Provider")
+            : base(typeof(PackageMetadataResource), nameof(UIMetadataResourceV3Provider), nameof(UIMetadataResourceV2FeedProvider))
         {
         }
 

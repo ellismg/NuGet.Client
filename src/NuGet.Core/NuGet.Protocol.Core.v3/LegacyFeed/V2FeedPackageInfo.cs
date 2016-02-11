@@ -186,7 +186,7 @@ namespace NuGet.Protocol
         {
             get
             {
-                return Published.HasValue && Published.Value.Year < 1902;
+                return !Published.HasValue || Published.Value.Year > 1901;
             }
         }
 

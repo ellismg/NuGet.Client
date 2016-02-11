@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
 
-namespace NuGet.Protocol.VisualStudio
+namespace NuGet.Protocol
 {
     public class PackageSearchResourceV3 : PackageSearchResource
     {
@@ -22,7 +22,7 @@ namespace NuGet.Protocol.VisualStudio
             _metadataResource = metadataResource;
         }
 
-        public async override Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filter, int skip, int take, CancellationToken cancellationToken)
+        public async override Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filter, int skip, int take, Logging.ILogger log, CancellationToken cancellationToken)
         {
             var searchResultJsonObjects = await _rawSearchResource.Search(searchTerm, filter, skip, take, Logging.NullLogger.Instance, cancellationToken);
 

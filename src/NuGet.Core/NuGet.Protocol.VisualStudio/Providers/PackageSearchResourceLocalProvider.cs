@@ -9,23 +9,26 @@ using NuGet.Protocol.Core.v2;
 
 namespace NuGet.Protocol.VisualStudio
 {
-    public class PackageSearchResourceV2Provider : V2ResourceProvider
+    public class PackageSearchResourceLocalProvider : V2ResourceProvider
     {
-        public PackageSearchResourceV2Provider()
-            : base(typeof(PackageSearchResource), nameof(PackageSearchResourceV2Provider), NuGetResourceProviderPositions.Last)
+        public PackageSearchResourceLocalProvider()
+            : base(typeof(PackageSearchResource), nameof(PackageSearchResourceLocalProvider), NuGetResourceProviderPositions.Last)
         {
         }
 
         public override async Task<Tuple<bool, INuGetResource>> TryCreate(SourceRepository source,
                                                                           CancellationToken token)
         {
-            PackageSearchResourceV2 resource = null;
+            PackageSearchResourceLocal resource = null;
 
-            var v2repo = await GetRepository(source, token);
-
-            if (v2repo != null)
+            if (FeedTypeUtility.GetFeedType(source.PackageSource) == FeedType.FileSystem)
             {
-                resource = new PackageSearchResourceV2(v2repo);
+                var v2repo = await GetRepository(source, token);
+
+                if (v2repo != null)
+                {
+                    resource = new PackageSearchResourceLocal(v2repo);
+                }
             }
 
             return new Tuple<bool, INuGetResource>(resource != null, resource);

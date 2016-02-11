@@ -7,26 +7,28 @@ using System.Threading.Tasks;
 using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
 
-namespace NuGet.Protocol.VisualStudio
+namespace NuGet.Protocol
 {
-    public class PackageSearchResourceV3Provider : ResourceProvider
+    public class AutoCompleteResourceV3Provider : ResourceProvider
     {
-        public PackageSearchResourceV3Provider()
-            : base(typeof(PackageSearchResource), nameof(PackageSearchResourceV3Provider), nameof(PackageSearchResourceV2Provider))
+        public AutoCompleteResourceV3Provider()
+            : base(typeof(AutoCompleteResource), nameof(AutoCompleteResourceV3Provider), nameof(AutoCompleteResourceV2FeedProvider))
         {
         }
 
         public override async Task<Tuple<bool, INuGetResource>> TryCreate(SourceRepository source, CancellationToken token)
         {
-            PackageSearchResourceV3 curResource = null;
+            AutoCompleteResourceV3 curResource = null;
+
             var serviceIndex = await source.GetResourceAsync<ServiceIndexResourceV3>(token);
 
             if (serviceIndex != null)
             {
-                var rawSearch = await source.GetResourceAsync<RawSearchResourceV3>(token);
-                var metadataResource = await source.GetResourceAsync<PackageMetadataResource>(token);
+                var regResource = await source.GetResourceAsync<RegistrationResourceV3>(token);
+                var httpSourceResource = await source.GetResourceAsync<HttpSourceResource>(token);
 
-                curResource = new PackageSearchResourceV3(rawSearch, metadataResource);
+                // construct a new resource
+                curResource = new AutoCompleteResourceV3(httpSourceResource.HttpSource, serviceIndex, regResource);
             }
 
             return new Tuple<bool, INuGetResource>(curResource != null, curResource);

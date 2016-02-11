@@ -12,7 +12,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
 using NuGet.Versioning;
 
-namespace NuGet.Protocol.VisualStudio
+namespace NuGet.Protocol
 {
     public class PackageMetadataResourceV3 : PackageMetadataResource
     {
@@ -27,29 +27,9 @@ namespace NuGet.Protocol.VisualStudio
             _reportAbuseResource = reportAbuseResource;
         }
 
-        public override async Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(IEnumerable<PackageIdentity> packages, CancellationToken token)
+        public override async Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(string packageId, bool includePrerelease, bool includeUnlisted, Logging.ILogger log, CancellationToken token)
         {
-            var results = new List<IPackageSearchMetadata>();
-
-            // group by id to optimize
-            foreach (var group in packages.GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase))
-            {
-                var versions = group.OrderBy(e => e.Version, VersionComparer.VersionRelease);
-
-                // find the range of versions we need
-                var range = new VersionRange(versions.First().Version, true, versions.Last().Version, true, true);
-
-                var metadataList = await _regResource.GetPackageMetadata(group.Key, range, true, true, Logging.NullLogger.Instance, token);
-
-                results.AddRange(metadataList.Select(ParseMetadata));
-            }
-
-            return results;
-        }
-
-        public override async Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(string packageId, bool includePrerelease, bool includeUnlisted, CancellationToken token)
-        {
-            var metadataList = await _regResource.GetPackageMetadata(packageId, includePrerelease, includeUnlisted, Logging.NullLogger.Instance, token);
+            var metadataList = await _regResource.GetPackageMetadata(packageId, includePrerelease, includeUnlisted, log, token);
             return metadataList.Select(ParseMetadata);
         }
 

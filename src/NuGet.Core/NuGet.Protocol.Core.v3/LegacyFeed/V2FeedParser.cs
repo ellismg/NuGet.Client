@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -63,7 +64,6 @@ namespace NuGet.Protocol
         public V2FeedParser(HttpSource httpSource, string sourceUrl)
             : this(httpSource, new PackageSource(sourceUrl))
         {
-
         }
 
         /// <summary>
@@ -100,29 +100,72 @@ namespace NuGet.Protocol
         {
             if (package == null)
             {
-                throw new ArgumentException("PackageIdentity");
+                throw new ArgumentException(nameof(PackageIdentity));
+            }
+
+            if (!package.HasVersion)
+            {
+                throw new ArgumentException(nameof(package.Version));
+            }
+
+            if (log == null)
+            {
+                throw new ArgumentNullException(nameof(log));
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
             }
 
             var uri = String.Format(CultureInfo.InvariantCulture, _getPackagesFormat, package.Id, package.Version);
             var packages = await QueryV2Feed(uri, package.Id, log, token);
-            return packages.FirstOrDefault();
+            return packages.FirstOrDefault(p => p.Version == package.Version);
         }
 
         /// <summary>
         /// Retrieves all packages with the given Id from a V2 feed.
         /// </summary>
-        public async Task<IEnumerable<V2FeedPackageInfo>> FindPackagesByIdAsync(string id, ILogger log, CancellationToken token)
+        public async Task<IReadOnlyList<V2FeedPackageInfo>> FindPackagesByIdAsync(
+            string id,
+            bool includeUnlisted,
+            bool includePrerelease,
+            ILogger log,
+            CancellationToken token)
         {
-            if (String.IsNullOrEmpty(id))
+            if (string.IsNullOrEmpty(id))
             {
-                throw new ArgumentException("id");
+                throw new ArgumentException(nameof(id));
             }
 
-            var uri = String.Format(CultureInfo.InvariantCulture, _findPackagesByIdFormat, id);
-            return await QueryV2Feed(uri, id, log, token);
+            if (log == null)
+            {
+                throw new ArgumentNullException(nameof(log));
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            var uri = string.Format(CultureInfo.InvariantCulture, _findPackagesByIdFormat, id);
+            var packages = await QueryV2Feed(uri, id, log, token);
+
+            var filtered = packages.Where(p => (includeUnlisted || p.IsListed)
+                && (includePrerelease || !p.Version.IsPrerelease));
+
+            return filtered.OrderByDescending(p => p.Version).Distinct().ToList();
         }
 
-        public async Task<IEnumerable<V2FeedPackageInfo>> Search(string searchTerm, SearchFilter filters, int skip, int take, ILogger log, CancellationToken cancellationToken)
+        /// <summary>
+        /// Retrieves all packages with the given Id from a V2 feed.
+        /// </summary>
+        public Task<IReadOnlyList<V2FeedPackageInfo>> FindPackagesByIdAsync(string id, ILogger log, CancellationToken token)
+        {
+            return FindPackagesByIdAsync(id, includeUnlisted: true, includePrerelease: true, log: log, token: token);
+        }
+
+        public async Task<IReadOnlyList<V2FeedPackageInfo>> Search(string searchTerm, SearchFilter filters, int skip, int take, ILogger log, CancellationToken cancellationToken)
         {
             var targetFramework = String.Join(@"/", filters.SupportedFrameworks);
             var uri = String.Format(CultureInfo.InvariantCulture, _searchEndPointFormat,
@@ -132,11 +175,12 @@ namespace NuGet.Protocol
                                     filters.IncludePrerelease.ToString().ToLowerInvariant(),
                                     skip,
                                     take);
+
             return await QueryV2Feed(uri, null, log, cancellationToken);
         }
 
-        public async Task<DownloadResourceResult> DownloadFromUrl(PackageIdentity package, 
-            Uri downloadUri, 
+        public async Task<DownloadResourceResult> DownloadFromUrl(PackageIdentity package,
+            Uri downloadUri,
             ISettings settings,
             ILogger log,
             CancellationToken token)
@@ -280,7 +324,7 @@ namespace NuGet.Protocol
                 {
                     try
                     {
-                        var doc = XDocument.Load(await data.Content.ReadAsStreamAsync());
+                        var doc = LoadXml(await data.Content.ReadAsStreamAsync());
 
                         // Example of what this looks like in the odata feed:
                         // <link rel="next" href="{nextLink}" />
@@ -309,16 +353,28 @@ namespace NuGet.Protocol
 
                         page++;
                     }
-                    catch (XmlException)
+                    catch (XmlException ex)
                     {
-                        //_reports.Information.WriteLine("The XML file {0} is corrupt",
-                        //    data.CacheFileName.Yellow().Bold());
+                        log.LogVerbose(ex.ToString());
                         throw;
                     }
                 }
             }
 
             return results;
+        }
+
+        private static XDocument LoadXml(Stream stream)
+        {
+            var xmlReader = XmlReader.Create(stream, new XmlReaderSettings()
+            {
+                CloseInput = true,
+                IgnoreWhitespace = true,
+                IgnoreComments = true,
+                IgnoreProcessingInstructions = true
+            });
+
+            return XDocument.Load(xmlReader, LoadOptions.None);
         }
     }
 }

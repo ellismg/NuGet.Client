@@ -11,7 +11,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
 using NuGet.Versioning;
 
-namespace NuGet.Protocol.VisualStudio
+namespace NuGet.Protocol
 {
     public class AutoCompleteResourceV3 : AutoCompleteResource
     {
@@ -30,6 +30,7 @@ namespace NuGet.Protocol.VisualStudio
         public override async Task<IEnumerable<string>> IdStartsWith(
             string packageIdPrefix,
             bool includePrerelease,
+            Logging.ILogger log,
             CancellationToken token)
         {
             var searchUrl = _serviceIndex[ServiceTypes.SearchAutocompleteService].FirstOrDefault();
@@ -76,6 +77,7 @@ namespace NuGet.Protocol.VisualStudio
             string packageId,
             string versionPrefix,
             bool includePrerelease,
+            Logging.ILogger log,
             CancellationToken token)
         {
             //*TODOs : Take prerelease as parameter. Also it should return both listed and unlisted for powershell ?
