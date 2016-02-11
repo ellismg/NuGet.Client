@@ -217,19 +217,21 @@ namespace NuGet.Protocol
 
                     foreach (var set in Dependencies.Split('|'))
                     {
-                        string[] parts = set.Split(':');
+                        string[] parts = set.Trim().Split(new[] { ':' });
 
-                        if (parts.Length == 3 || parts.Length == 2)
+                        if (parts.Length != 0)
                         {
-                            NuGetFramework framework = null;
-                            if (parts.Length == 3)
+                            VersionRange versionRange = null;
+
+                            if (parts.Length > 1 && !string.IsNullOrEmpty(parts[1]))
                             {
-                               framework = NuGetFramework.Parse(parts[2]);
+                                // Attempt to parse the version
+                                versionRange = VersionRange.Parse(parts[1]);
                             }
-                            else
-                            {
-                                framework = NuGetFramework.AnyFramework;
-                            }
+
+                            var framework = (parts.Length > 2 && !String.IsNullOrEmpty(parts[2]))
+                                   ? NuGetFramework.Parse(parts[2])
+                                   : NuGetFramework.AnyFramework;
 
                             List<PackageDependency> deps = null;
                             if (!results.TryGetValue(framework, out deps))
@@ -238,7 +240,10 @@ namespace NuGet.Protocol
                                 results.Add(framework, deps);
                             }
 
-                            deps.Add(new PackageDependency(parts[0], VersionRange.Parse(parts[1])));
+                            if (!string.IsNullOrEmpty(parts[0]) && versionRange != null)
+                            {
+                                deps.Add(new PackageDependency(parts[0], versionRange));
+                            }
                         }
                         else
                         {

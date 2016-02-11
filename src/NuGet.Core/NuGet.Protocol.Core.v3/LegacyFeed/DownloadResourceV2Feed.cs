@@ -16,7 +16,7 @@ namespace NuGet.Protocol
 
         public DownloadResourceV2Feed(V2FeedParser feedParser)
         {
-            if (_feedParser == null)
+            if (feedParser == null)
             {
                 throw new ArgumentNullException(nameof(feedParser));
             }

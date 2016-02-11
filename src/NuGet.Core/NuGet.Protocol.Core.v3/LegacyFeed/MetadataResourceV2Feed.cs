@@ -19,7 +19,7 @@ namespace NuGet.Protocol
 
         public MetadataResourceV2Feed(V2FeedParser feedParser, SourceRepository source)
         {
-            if (_feedParser == null)
+            if (feedParser == null)
             {
                 throw new ArgumentNullException(nameof(feedParser));
             }
@@ -92,7 +92,7 @@ namespace NuGet.Protocol
             }
             catch (Exception ex)
             {
-                throw new FatalProtocolException(string.Format(CultureInfo.CurrentCulture, Strings.Protocol_PackageMetadataError, packageId, _source), ex);
+                throw new FatalProtocolException(string.Format(CultureInfo.CurrentCulture, Strings.Protocol_PackageMetadataError, identity, _source), ex);
             }
         }
 
