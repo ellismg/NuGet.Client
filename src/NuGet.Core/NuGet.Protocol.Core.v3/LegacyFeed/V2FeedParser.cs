@@ -118,9 +118,25 @@ namespace NuGet.Protocol
                 throw new ArgumentNullException(nameof(token));
             }
 
-            var uri = String.Format(CultureInfo.InvariantCulture, _getPackagesFormat, package.Id, package.Version);
+            var uri = String.Format(
+                CultureInfo.InvariantCulture, 
+                _getPackagesFormat,
+                package.Id,
+                package.Version.ToNormalizedString());
+
+            // Try to find the package directly
             var packages = await QueryV2Feed(uri, package.Id, log, token);
-            return packages.FirstOrDefault(p => p.Version == package.Version);
+
+            // If not found use FindPackagesById
+            if (packages.Count < 1)
+            {
+                var allPackages = await FindPackagesByIdAsync(package.Id, log, token);
+
+                return packages.Where(p => p.Version == package.Version)
+                    .FirstOrDefault();
+            }
+
+            return packages.FirstOrDefault();
         }
 
         /// <summary>
