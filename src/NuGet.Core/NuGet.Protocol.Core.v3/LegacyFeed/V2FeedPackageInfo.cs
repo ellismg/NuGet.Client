@@ -201,15 +201,15 @@ namespace NuGet.Protocol
         /// <summary>
         /// Parses Dependencies into actual groups
         /// </summary>
-        public IEnumerable<PackageDependencyGroup> DependencySets
+        public IReadOnlyList<PackageDependencyGroup> DependencySets
         {
             get
             {
                 // Ex: Microsoft.Data.OData:5.6.3:aspnetcore50|Microsoft.Data.Services.Client:5.6.3:aspnetcore50|System.Spatial:5.6.3:aspnetcore50|System.Collections:4.0.10-beta-22231:aspnetcore50|System.Collections.Concurrent:4.0.0-beta-22231:aspnetcore50|System.Collections.Specialized:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.Debug:4.0.10-beta-22231:aspnetcore50|System.Diagnostics.Tools:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.TraceSource:4.0.0-beta-22231:aspnetcore50|System.Diagnostics.Tracing:4.0.10-beta-22231:aspnetcore50|System.Dynamic.Runtime:4.0.0-beta-22231:aspnetcore50|System.Globalization:4.0.10-beta-22231:aspnetcore50|System.IO:4.0.10-beta-22231:aspnetcore50|System.IO.FileSystem:4.0.0-beta-22231:aspnetcore50|System.IO.FileSystem.Primitives:4.0.0-beta-22231:aspnetcore50|System.Linq:4.0.0-beta-22231:aspnetcore50|System.Linq.Expressions:4.0.0-beta-22231:aspnetcore50|System.Linq.Queryable:4.0.0-beta-22231:aspnetcore50|System.Net.Http:4.0.0-beta-22231:aspnetcore50|System.Net.Primitives:4.0.10-beta-22231:aspnetcore50|System.Reflection:4.0.10-beta-22231:aspnetcore50|System.Reflection.Extensions:4.0.0-beta-22231:aspnetcore50|System.Reflection.TypeExtensions:4.0.0-beta-22231:aspnetcore50|System.Runtime:4.0.20-beta-22231:aspnetcore50|System.Runtime.Extensions:4.0.10-beta-22231:aspnetcore50|System.Runtime.InteropServices:4.0.20-beta-22231:aspnetcore50|System.Runtime.Serialization.Primitives:4.0.0-beta-22231:aspnetcore50|System.Runtime.Serialization.Xml:4.0.10-beta-22231:aspnetcore50|System.Security.Cryptography.Encoding:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Encryption:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Hashing:4.0.0-beta-22231:aspnetcore50|System.Security.Cryptography.Hashing.Algorithms:4.0.0-beta-22231:aspnetcore50|System.Text.Encoding:4.0.10-beta-22231:aspnetcore50|System.Text.Encoding.Extensions:4.0.10-beta-22231:aspnetcore50|System.Text.RegularExpressions:4.0.10-beta-22231:aspnetcore50|System.Threading:4.0.0-beta-22231:aspnetcore50|System.Threading.Tasks:4.0.10-beta-22231:aspnetcore50|System.Threading.Thread:4.0.0-beta-22231:aspnetcore50|System.Threading.ThreadPool:4.0.10-beta-22231:aspnetcore50|System.Threading.Timer:4.0.0-beta-22231:aspnetcore50|System.Xml.ReaderWriter:4.0.10-beta-22231:aspnetcore50|System.Xml.XDocument:4.0.0-beta-22231:aspnetcore50|System.Xml.XmlSerializer:4.0.0-beta-22231:aspnetcore50|Microsoft.Data.OData:5.6.3:aspnet50|Microsoft.Data.Services.Client:5.6.3:aspnet50|System.Spatial:5.6.3:aspnet50|Microsoft.Data.OData:5.6.2:net40-Client|Newtonsoft.Json:5.0.8:net40-Client|Microsoft.Data.Services.Client:5.6.2:net40-Client|Microsoft.WindowsAzure.ConfigurationManager:1.8.0.0:net40-Client|Microsoft.Data.OData:5.6.2:win80|Microsoft.Data.OData:5.6.2:wpa|Microsoft.Data.OData:5.6.2:wp80|Newtonsoft.Json:5.0.8:wp80
 
-                if (String.IsNullOrEmpty(Dependencies))
+                if (string.IsNullOrEmpty(Dependencies))
                 {
-                    return Enumerable.Empty<PackageDependencyGroup>();
+                    return new List<PackageDependencyGroup>();
                 }
                 else
                 {
@@ -217,22 +217,39 @@ namespace NuGet.Protocol
 
                     foreach (var set in Dependencies.Split('|'))
                     {
-                        string[] parts = set.Trim().Split(new[] { ':' });
+                        var parts = set.Trim().Split(new[] { ':' }, StringSplitOptions.None);
 
                         if (parts.Length != 0)
                         {
-                            VersionRange versionRange = null;
+                            // Defaults
+                            var dependencyId = parts[0];
+                            var versionRange = VersionRange.All;
+                            var framework = NuGetFramework.AnyFramework;
 
-                            if (parts.Length > 1 && !string.IsNullOrEmpty(parts[1]))
+                            if (parts.Length > 1)
                             {
-                                // Attempt to parse the version
-                                versionRange = VersionRange.Parse(parts[1]);
+                                var versionRangeString = parts[1];
+
+                                // Parse the optional version range
+                                if (!string.IsNullOrEmpty(versionRangeString))
+                                {
+                                    // Attempt to parse the version
+                                    versionRange = VersionRange.Parse(versionRangeString);
+                                }
+
+                                // Parse the optional framework string
+                                if (parts.Length > 2)
+                                {
+                                    var frameworkString = parts[2];
+
+                                    if (!string.IsNullOrEmpty(frameworkString))
+                                    {
+                                        framework = NuGetFramework.Parse(frameworkString);
+                                    }
+                                }
                             }
 
-                            var framework = (parts.Length > 2 && !String.IsNullOrEmpty(parts[2]))
-                                   ? NuGetFramework.Parse(parts[2])
-                                   : NuGetFramework.AnyFramework;
-
+                            // Group dependencies by target framework
                             List<PackageDependency> deps = null;
                             if (!results.TryGetValue(framework, out deps))
                             {
@@ -240,9 +257,16 @@ namespace NuGet.Protocol
                                 results.Add(framework, deps);
                             }
 
-                            if (!string.IsNullOrEmpty(parts[0]) && versionRange != null)
+                            // Validate - this should never be empty
+                            if (!string.IsNullOrEmpty(dependencyId))
                             {
-                                deps.Add(new PackageDependency(parts[0], versionRange));
+                                // Make sure there are no duplicate dependencies, this could happen with Unsupported
+                                if (!deps.Any(p => string.Equals(p.Id, dependencyId, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    var packageDependency = new PackageDependency(dependencyId, versionRange);
+
+                                    deps.Add(packageDependency);
+                                }
                             }
                         }
                         else
@@ -251,7 +275,7 @@ namespace NuGet.Protocol
                         }
                     }
 
-                    return results.Select(pair => new PackageDependencyGroup(pair.Key, pair.Value));
+                    return results.Select(pair => new PackageDependencyGroup(pair.Key, pair.Value)).ToList();
                 }
             }
         }
