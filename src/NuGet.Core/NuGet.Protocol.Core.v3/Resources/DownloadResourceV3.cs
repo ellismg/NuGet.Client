@@ -2,13 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Globalization;
-using System.IO;
-using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
@@ -133,12 +128,5 @@ namespace NuGet.Protocol.Core.v3
 
             return null;
         }
-                    string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri)
-                        + Environment.NewLine
-                        + ExceptionUtilities.DisplayMessage(ex);
-                    string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri);
-                    logger.LogError(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
-
-                    throw new FatalProtocolException(message, ex);
     }
 }

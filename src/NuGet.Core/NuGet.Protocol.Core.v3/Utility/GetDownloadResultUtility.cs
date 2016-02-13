@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -10,6 +11,7 @@ using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3;
 
 namespace NuGet.Protocol
 {
@@ -20,7 +22,7 @@ namespace NuGet.Protocol
            PackageIdentity identity,
            Uri uri,
            ISettings settings,
-           ILogger log,
+           ILogger logger,
            CancellationToken token)
         {
             // Uri is not null, so the package exists in the source
@@ -34,18 +36,16 @@ namespace NuGet.Protocol
                 return packageFromGlobalPackages;
             }
 
-            log.LogVerbose($"  GET: {uri}");
-
             for (int i = 0; i < 3; i++)
             {
                 try
                 {
-                    using (var packageStream = await client.GetStreamAsync(uri, log, token))
+                    using (var packageStream = await client.GetStreamAsync(uri, logger, token))
                     {
                         var downloadResult = await GlobalPackagesFolderUtility.AddPackageAsync(identity,
                             packageStream,
                             settings,
-                            log,
+                            logger,
                             token);
 
                         return downloadResult;
@@ -53,13 +53,17 @@ namespace NuGet.Protocol
                 }
                 catch (IOException ex) when (ex.InnerException is SocketException && i < 2)
                 {
-                    string message = $"Error downloading {identity} from {uri} {ExceptionUtilities.DisplayMessage(ex)}";
-
-                    log.LogWarning(message);
+                    string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri)
+                        + Environment.NewLine
+                        + ExceptionUtilities.DisplayMessage(ex);
+                    logger.LogWarning(message);
                 }
                 catch (Exception ex)
                 {
-                    throw new FatalProtocolException(ex);
+                    string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri);
+                    logger.LogError(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
+
+                    throw new FatalProtocolException(message, ex);
                 }
             }
 
