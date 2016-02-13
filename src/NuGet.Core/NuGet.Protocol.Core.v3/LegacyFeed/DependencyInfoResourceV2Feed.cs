@@ -41,6 +41,10 @@ namespace NuGet.Protocol
             {
                 var packageInfo = await _feedParser.GetPackage(package, log, token);
 
+                if (packageInfo == null)
+                {
+                    return null;
+                }
                 return CreateDependencyInfo(packageInfo, projectFramework);
             }
             catch (Exception ex)
