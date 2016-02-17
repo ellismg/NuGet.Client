@@ -125,7 +125,8 @@ namespace NuGet.Protocol
                 package.Version.ToNormalizedString());
 
             // Try to find the package directly
-            var packages = await QueryV2Feed(uri, package.Id, log, token);
+            // Set max count to -1, get all packages 
+            var packages = await QueryV2Feed(uri, package.Id, -1, log, token);
 
             // If not found use FindPackagesById
             if (packages.Count < 1)
@@ -165,7 +166,8 @@ namespace NuGet.Protocol
             }
 
             var uri = string.Format(CultureInfo.InvariantCulture, _findPackagesByIdFormat, id);
-            var packages = await QueryV2Feed(uri, id, log, token);
+            // Set max count to -1, get all packages
+            var packages = await QueryV2Feed(uri, id, -1, log, token);
 
             var filtered = packages.Where(p => (includeUnlisted || p.IsListed)
                 && (includePrerelease || !p.Version.IsPrerelease));
@@ -192,7 +194,7 @@ namespace NuGet.Protocol
                                     skip,
                                     take);
 
-            return await QueryV2Feed(uri, null, log, cancellationToken);
+            return await QueryV2Feed(uri, null, take, log, cancellationToken);
         }
 
         public async Task<DownloadResourceResult> DownloadFromUrl(PackageIdentity package,
@@ -320,7 +322,7 @@ namespace NuGet.Protocol
             return value;
         }
 
-        private async Task<List<V2FeedPackageInfo>> QueryV2Feed(string uri, string id, ILogger log, CancellationToken token)
+        private async Task<List<V2FeedPackageInfo>> QueryV2Feed(string uri, string id, int max, ILogger log, CancellationToken token)
         {
             var results = new List<V2FeedPackageInfo>();
             var page = 1;
@@ -351,23 +353,26 @@ namespace NuGet.Protocol
                                        where nextLink != null
                                        select nextLink.Value).FirstOrDefault();
 
-                        // Request the next url in parallel to parsing the current page
                         urlRequest = null;
-                        if (!string.IsNullOrEmpty(nextUri) && uri != nextUri)
+                        if (max < 0 || results.Count < max)
                         {
-                            // a bug on the server side causes the same next link to be returned 
-                            // for every page. To avoid falling into an infinite loop we must
-                            // keep track here.
-                            uri = nextUri;
+                            // Request the next url in parallel to parsing the current page
+                            if (!string.IsNullOrEmpty(nextUri) && uri != nextUri)
+                            {
+                                // a bug on the server side causes the same next link to be returned 
+                                // for every page. To avoid falling into an infinite loop we must
+                                // keep track here.
+                                uri = nextUri;
 
-                            urlRequest = _httpSource.GetAsync(new Uri(nextUri), log, token);
+                                urlRequest = _httpSource.GetAsync(new Uri(nextUri), log, token);
+                            }
+
+                            // find results on the page
+                            var result = ParsePage(doc, id);
+                            results.AddRange(result);
+
+                            page++;
                         }
-
-                        // find results on the page
-                        var result = ParsePage(doc, id);
-                        results.AddRange(result);
-
-                        page++;
                     }
                     catch (XmlException ex)
                     {
