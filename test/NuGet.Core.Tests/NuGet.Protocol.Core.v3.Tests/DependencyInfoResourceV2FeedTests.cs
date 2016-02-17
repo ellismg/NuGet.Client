@@ -64,18 +64,23 @@ namespace NuGet.Protocol.Core.v3.Tests
         }
 
         [Fact]
-        public async Task DependencyInfo_XunitRetrieveExactVersion()
+        public async Task DependencyInfo_RetrieveExactVersion()
         {
             // Arrange
-            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
-            var resource = await repo.GetResourceAsync<DependencyInfoResource>();
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/Packages(Id='xunit',Version='2.1.0-beta1-build2945')",
+                 TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.Xunit.2.1.0-beta1-build2945GetPackages.xml", GetType()));
+
+            var repo = StaticHttpHandler.CreateSource("http://testsource/v2/", Repository.Provider.GetCoreV3(), responses);
+
+            var dependencyInfoResource = await repo.GetResourceAsync<DependencyInfoResource>();
 
             var package = new PackageIdentity("xunit", NuGetVersion.Parse("2.1.0-beta1-build2945"));
             var dep1 = new PackageIdentity("xunit.core", NuGetVersion.Parse("2.1.0-beta1-build2945"));
             var dep2 = new PackageIdentity("xunit.assert", NuGetVersion.Parse("2.1.0-beta1-build2945"));
 
             // Act
-            var result = await resource.ResolvePackage(package, NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
+            var result = await dependencyInfoResource.ResolvePackage(package, NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
 
             // Assert
             Assert.Equal(package, result, PackageIdentity.Comparer);
@@ -85,11 +90,16 @@ namespace NuGet.Protocol.Core.v3.Tests
         }
 
         [Fact]
-        public async Task DependencyInfo_XunitRetrieveDependencies()
+        public async Task DependencyInfo_RetrieveDependencies()
         {
             // Arrange
-            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
-            var resource = await repo.GetResourceAsync<DependencyInfoResource>();
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/FindPackagesById()?Id='xunit'",
+                 TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.XunitFindPackagesById.xml", GetType()));
+
+            var repo = StaticHttpHandler.CreateSource("http://testsource/v2/", Repository.Provider.GetCoreV3(), responses);
+
+            var dependencyInfoResource = await repo.GetResourceAsync<DependencyInfoResource>();
 
             var package = new PackageIdentity("xunit", NuGetVersion.Parse("2.1.0-beta1-build2945"));
 
@@ -97,7 +107,7 @@ namespace NuGet.Protocol.Core.v3.Tests
             var filterRange = new VersionRange(NuGetVersion.Parse("2.0.0-rc4-build2924"), true, NuGetVersion.Parse("2.1.0-beta1-build2945"), true);
 
             // Act
-            var results = await resource.ResolvePackages("xunit", NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
+            var results = await dependencyInfoResource.ResolvePackages("xunit", NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
 
             var filtered = results.Where(result => filterRange.Satisfies(result.Version));
 
@@ -111,35 +121,67 @@ namespace NuGet.Protocol.Core.v3.Tests
         }
 
         [Fact]
-        public async Task DependencyInfo_XunitRetrieveExactVersion_NotFound()
+        public async Task DependencyInfo_RetrieveExactVersion_NotFound()
         {
             // Arrange
-            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
-            var resource = await repo.GetResourceAsync<DependencyInfoResource>();
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/Packages(Id='xunit',Version='1.0.0-notfound')", null);
+            responses.Add("http://testsource/v2/FindPackagesById()?Id='xunit'",
+                TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.XunitFindPackagesById.xml", GetType()));
 
-            var package = new PackageIdentity("nuget.core", NuGetVersion.Parse("1.0.0-notfound"));
+            var repo = StaticHttpHandler.CreateSource("http://testsource/v2/", Repository.Provider.GetCoreV3(), responses,
+                 TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.500Error.xml", GetType()));
+
+            var dependencyInfoResource = await repo.GetResourceAsync<DependencyInfoResource>();
+
+            var package = new PackageIdentity("xunit", NuGetVersion.Parse("1.0.0-notfound"));
 
             // Act
-            var result = await resource.ResolvePackage(package, NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
+            var result = await dependencyInfoResource.ResolvePackage(package, NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
 
             // Assert
             Assert.Null(result);
         }
 
         [Fact]
-        public async Task DependencyInfo_XunitRetrieveDependencies_NotFound()
+        public async Task DependencyInfo_RetrieveDependencies_NotFound()
         {
             // Arrange
-            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
-            var resource = await repo.GetResourceAsync<DependencyInfoResource>();
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/FindPackagesById()?Id='not-found'",
+                TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.NotFoundFindPackagesById.xml", GetType()));
 
-            var package = new PackageIdentity("nuget.notfound", NuGetVersion.Parse("1.0.0-blah"));
+            var repo = StaticHttpHandler.CreateSource("http://testsource/v2/", Repository.Provider.GetCoreV3(), responses);
+
+            var dependencyInfoResource = await repo.GetResourceAsync<DependencyInfoResource>();
 
             // Act
-            var results = await resource.ResolvePackages("nuget.notfound", NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
+            var results = await dependencyInfoResource.ResolvePackages("not-found", NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
 
             // Assert
             Assert.Equal(0, results.Count());
+        }
+
+        [Fact]
+        public async Task DependencyInfo_GetNearestFramework()
+        {
+            // Arrange
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/Packages(Id='DotNetOpenAuth.Core',Version='4.3.2.13293')",
+                 TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.DotNetOpenAuth.Core.4.3.2.13293GetPackages.xml", GetType()));
+
+            var repo = StaticHttpHandler.CreateSource("http://testsource/v2/", Repository.Provider.GetCoreV3(), responses);
+
+            var dependencyInfoResource = await repo.GetResourceAsync<DependencyInfoResource>();
+
+            var package = new PackageIdentity("DotNetOpenAuth.Core", NuGetVersion.Parse("4.3.2.13293"));
+
+            // Act
+            var result = await dependencyInfoResource.ResolvePackage(package, NuGetFramework.Parse("net45"), Logging.NullLogger.Instance, CancellationToken.None);
+
+            // Assert
+            Assert.Equal(1, result.Dependencies.Count());
+            Assert.Equal("Microsoft.Net.Http", result.Dependencies.FirstOrDefault().Id);
         }
     }
 }
