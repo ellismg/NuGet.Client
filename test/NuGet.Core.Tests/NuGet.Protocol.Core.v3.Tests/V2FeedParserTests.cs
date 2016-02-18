@@ -128,6 +128,50 @@ namespace NuGet.Protocol.Core.v3.Tests
         }
 
         [Fact]
+        public async Task V2FeedParser_DownloadFromInvalidUrl()
+        {
+            // Arrange
+            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
+
+            var httpSource = HttpSource.Create(repo);
+
+            V2FeedParser parser = new V2FeedParser(httpSource, "https://www.nuget.org/api/v2/");
+
+            // Act 
+            Exception ex = await Assert.ThrowsAsync<FatalProtocolException>(async () => await parser.DownloadFromUrl(new PackageIdentity("not-found", new NuGetVersion("6.2.0")),
+                                                              new Uri("https://www.invalid.org/api/v2"),
+                                                              Configuration.NullSettings.Instance,
+                                                              NullLogger.Instance,
+                                                              CancellationToken.None));
+
+            // Assert
+            Assert.NotNull(ex);
+            Assert.Equal("Error downloading 'not-found.6.2.0' from 'https://www.invalid.org/api/v2'.", ex.Message);
+        }
+
+        [Fact]
+        public async Task V2FeedParser_DownloadFromUrlInvalidId()
+        {
+            // Arrange
+            var repo = Repository.Factory.GetCoreV3("https://www.nuget.org/api/v2/");
+
+            var httpSource = HttpSource.Create(repo);
+
+            V2FeedParser parser = new V2FeedParser(httpSource, "https://www.nuget.org/api/v2/");
+
+            // Act 
+            Exception ex = await Assert.ThrowsAsync<FatalProtocolException>(async () => await parser.DownloadFromUrl(new PackageIdentity("not-found", new NuGetVersion("6.2.0")),
+                                                              new Uri("https://www.nuget.org/api/v2/package/not-found/6.2.0"),
+                                                              Configuration.NullSettings.Instance,
+                                                              NullLogger.Instance,
+                                                              CancellationToken.None));
+
+            // Assert
+            Assert.NotNull(ex);
+            Assert.Equal("Error downloading 'not-found.6.2.0' from 'https://www.nuget.org/api/v2/package/not-found/6.2.0'.", ex.Message);
+        }
+
+        [Fact]
         public async Task V2FeedParser_DownloadFromIdentity()
         {
             // Arrange
@@ -148,6 +192,30 @@ namespace NuGet.Protocol.Core.v3.Tests
 
                 Assert.Equal(11, files.Count());
             }
+        }
+
+        [Fact]
+        public async Task V2FeedParser_DownloadFromIdentityInvalidId()
+        {
+            // Arrange
+            var responses = new Dictionary<string, string>();
+            responses.Add("http://testsource/v2/Packages(Id='xunit',Version='1.0.0-notfound')", null);
+            responses.Add("http://testsource/v2/FindPackagesById()?Id='xunit'",
+                TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.XunitFindPackagesById.xml", GetType()));
+
+            var httpSource = new TestHttpSource(new PackageSource("http://testsource/v2/"), responses,
+                TestUtility.GetResource("NuGet.Protocol.Core.v3.Tests.compiler.resources.500Error.xml", GetType()));
+            V2FeedParser parser = new V2FeedParser(httpSource, "http://testsource/v2/");
+
+            // Act 
+            Exception ex = await Assert.ThrowsAsync<FatalProtocolException>(async () => await parser.DownloadFromIdentity(new PackageIdentity("xunit", new NuGetVersion("1.0.0-notfound")),
+                                                              Configuration.NullSettings.Instance,
+                                                              NullLogger.Instance,
+                                                              CancellationToken.None));
+
+            // Assert
+            Assert.NotNull(ex);
+            Assert.Equal("Can't find Package 'xunit.1.0.0-notfound' from source 'http://testsource/v2/'.", ex.Message);
         }
 
         [Fact]

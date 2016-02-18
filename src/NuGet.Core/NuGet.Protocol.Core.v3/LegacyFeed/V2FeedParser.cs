@@ -12,6 +12,7 @@ using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3;
 using NuGet.Versioning;
 
 namespace NuGet.Protocol
@@ -212,6 +213,13 @@ namespace NuGet.Protocol
             CancellationToken token)
         {
             var packageInfo = await GetPackage(package, log, token);
+
+            if (packageInfo == null)
+            {
+                string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_FailedToFindPackage, package, _source.Source);
+
+                throw new FatalProtocolException(message);
+            }
             return await GetDownloadResultUtility.GetDownloadResultAsync(_httpSource, package, new Uri(packageInfo.DownloadUrl), settings, log, token);
         }
 
