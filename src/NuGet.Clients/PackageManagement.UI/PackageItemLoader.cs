@@ -37,7 +37,7 @@ namespace NuGet.PackageManagement.UI
 
             public PackageFeedSearchState(SearchResult<IPackageSearchMetadata> results = null)
             {
-                _results = results;
+                _results = results ?? SearchResult.Empty<IPackageSearchMetadata>();
             }
 
             public SearchResult<IPackageSearchMetadata> Results => _results;
@@ -56,7 +56,7 @@ namespace NuGet.PackageManagement.UI
 
                 if (count == 0)
                 {
-                    return LoadingStatus.Ready;
+                    return LoadingStatus.Loading;
                 }
 
                 var first = statuses.First();
@@ -80,7 +80,22 @@ namespace NuGet.PackageManagement.UI
                     return LoadingStatus.Cancelled;
                 }
 
-                return LoadingStatus.Unknown;
+                if (statuses.Contains(LoadingStatus.Ready))
+                {
+                    return LoadingStatus.Ready;
+                }
+
+                if (statuses.Contains(LoadingStatus.NoMoreItems))
+                {
+                    return LoadingStatus.NoMoreItems;
+                }
+
+                if (statuses.Contains(LoadingStatus.NoItemsFound))
+                {
+                    return LoadingStatus.NoItemsFound;
+                }
+
+                return first;
             }
         }
 
@@ -130,7 +145,12 @@ namespace NuGet.PackageManagement.UI
 
             NuGetEventTrigger.Instance.TriggerEvent(NuGetEvent.PackageLoadBegin);
 
-            var searchResult = await SearchAsync(_state.Results?.NextToken, cancellationToken);
+            var nextToken = _state.Results?.NextToken;
+            var cleanState = SearchResult.Empty<IPackageSearchMetadata>();
+            cleanState.NextToken = nextToken;
+            await UpdateStateAndReportAsync(cleanState, progress);
+
+            var searchResult = await SearchAsync(nextToken, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -144,6 +164,8 @@ namespace NuGet.PackageManagement.UI
             cancellationToken.ThrowIfCancellationRequested();
 
             NuGetEventTrigger.Instance.TriggerEvent(NuGetEvent.PackageLoadBegin);
+
+            progress?.Report(_state);
 
             var refreshToken = _state.Results?.RefreshToken;
             if (refreshToken != null)

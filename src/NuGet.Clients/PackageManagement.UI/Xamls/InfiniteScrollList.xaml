@@ -49,7 +49,7 @@
           Visibility="Collapsed">
           <Button
             Click="RetryButtonClicked"
-            Content="{x:Static resx:Resources.Button_Retry}"
+            Content="{x:Static resx:Resources.Button_RestartSearch}"
             MinWidth="150" />
           <Expander
             Margin="0,8,0,0"
@@ -265,11 +265,18 @@
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
+    <resx:LoadingStatusBar 
+      x:Name="_loadingStatusBar"
+      Grid.Row="0"
+      ItemsLoaded="{Binding Path=PackageItemsCount,Mode=OneWay}"
+      ShowMoreResultsClicked="_loadingStatusBar_ShowMoreResultsClicked"
+      RestartSearchClicked="_loadingStatusBar_RestartSearchClicked" />
     <Border
       x:Name="_updateButtonContainer"
-      Grid.Row="0"
+      Grid.Row="1"
       BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
       BorderThickness="0,0,0,1"
       Background="{DynamicResource {x:Static resx:Brushes.LegalMessageBackground}}">
@@ -301,8 +308,8 @@
     </Border>
     <ListBox
       x:Name="_list"
+      Grid.Row="2"
       PreviewKeyUp="List_PreviewKeyUp"
-      Grid.Row="1"
       Background="{DynamicResource {x:Static resx:Brushes.ListPaneBackground}}"
       Foreground="{DynamicResource {x:Static resx:Brushes.UIText}}"
       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
