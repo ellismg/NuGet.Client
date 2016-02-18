@@ -2,12 +2,16 @@
   "version": "3.4.0-*",
   "preprocess": "../../compiler/preprocess/*.cs",
   "dependencies": {
-    "NuGet.Versioning": "3.4.0-*",
-    "NuGet.Packaging": "3.4.0-*",
     "Newtonsoft.Json": "6.0.4",
+    "NuGet.Versioning": {
+      "target": "project"
+    },
+    "NuGet.Packaging": {
+      "target": "project"
+    },
     "NuGet.Shared": {
       "type": "build",
-      "version": "3.4.0-*"
+      "target": "project"
     }
   },
   "compilationOptions": {
@@ -63,8 +67,7 @@
     "dnxcore50": {
       "imports": [ "portable-net45+win8" ],
       "dependencies": {
-        "System.Xml.XDocument": "4.0.10-beta-23109",
-        "System.IO.Compression": "4.0.0-beta-23109"
+        "NETStandard.Library": "1.0.0-rc2-23811"
       }
     }
   }
