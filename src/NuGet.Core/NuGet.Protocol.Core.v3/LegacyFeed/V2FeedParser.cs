@@ -62,6 +62,8 @@ namespace NuGet.Protocol
         private readonly string _searchEndPointFormat;
         private readonly string _getPackagesFormat;
 
+        public PackageSource Source { get { return _source; } }
+
         public V2FeedParser(HttpSource httpSource, string sourceUrl)
             : this(httpSource, new PackageSource(sourceUrl))
         {

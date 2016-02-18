@@ -68,11 +68,9 @@ namespace NuGet.Protocol
 
             try
             {
-                var packages = await _feedParser.FindPackagesByIdAsync(packageId, log, token);
+                var packages = await _feedParser.FindPackagesByIdAsync(packageId, includeUnlisted, includePrerelease, log, token);
 
-                return packages.Where(p => includeUnlisted || p.IsListed)
-                               .Select(p => p.Version)
-                               .Where(v => includePrerelease || !v.IsPrerelease).ToArray();
+                return packages.Select(p => p.Version).ToArray();
             }
             catch (Exception ex)
             {

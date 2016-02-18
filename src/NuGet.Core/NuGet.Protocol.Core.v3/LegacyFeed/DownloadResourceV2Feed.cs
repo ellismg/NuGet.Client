@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3;
 
 namespace NuGet.Protocol
 {
@@ -51,17 +54,28 @@ namespace NuGet.Protocol
             bool isFromUri = sourcePackage?.PackageHash != null
                             && sourcePackage?.DownloadUri != null;
 
-            if (isFromUri)
+            try
             {
-                // If this is a SourcePackageDependencyInfo object with everything populated
-                // and it is from an online source, use the machine cache and download it using the
-                // given url.
-                return await _feedParser.DownloadFromUrl(sourcePackage, sourcePackage.DownloadUri, settings, logger, token);
+                if (isFromUri)
+                {
+                    // If this is a SourcePackageDependencyInfo object with everything populated
+                    // and it is from an online source, use the machine cache and download it using the
+                    // given url.
+                    return await _feedParser.DownloadFromUrl(sourcePackage, sourcePackage.DownloadUri, settings, logger, token);
+                }
+                else
+                {
+                    // Look up the package from the id and version and download it.
+                    return await _feedParser.DownloadFromIdentity(identity, settings, logger, token);
+                }
             }
-            else
+            catch(Exception ex) when(!(ex is FatalProtocolException))
             {
-                // Look up the package from the id and version and download it.
-                return await _feedParser.DownloadFromIdentity(identity, settings, logger, token);
+                // if the expcetion is not FatalProtocolException, catch it.
+                string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, _feedParser.Source.Source);
+                logger.LogError(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
+
+                throw new FatalProtocolException(message, ex);
             }
         }
     }
