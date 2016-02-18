@@ -121,6 +121,7 @@ namespace PackageManagement.UI.Test
                 var metadata = PackageSearchMetadataBuilder.FromIdentity(packageB).Build();
 
                 var results = SearchResult.FromItems(metadata);
+                results.SourceSearchStatus = new Dictionary<string, LoadingStatus> { { "test", LoadingStatus.NoMoreItems } };
                 return Task.FromResult(results);
             }
 
@@ -133,6 +134,7 @@ namespace PackageManagement.UI.Test
 
                 var results = SearchResult.FromItems(metadata);
                 results.NextToken = new ContinuationToken { };
+                results.SourceSearchStatus = new Dictionary<string, LoadingStatus> { { "test", LoadingStatus.Ready } };
                 return Task.FromResult(results);
             }
 
@@ -140,8 +142,10 @@ namespace PackageManagement.UI.Test
             {
                 var results = new SearchResult<IPackageSearchMetadata>
                 {
-                    RefreshToken = new RefreshToken { }
+                    RefreshToken = new RefreshToken { },
+                    SourceSearchStatus = new Dictionary<string, LoadingStatus> { { "test", LoadingStatus.Loading } }
                 };
+
                 return Task.FromResult(results);
             }
         }

@@ -35,14 +35,34 @@ namespace NuGet.PackageManagement.UI
         {
             private readonly SearchResult<IPackageSearchMetadata> _results;
 
-            public PackageFeedSearchState(SearchResult<IPackageSearchMetadata> results = null)
+            public PackageFeedSearchState()
             {
-                _results = results ?? SearchResult.Empty<IPackageSearchMetadata>();
+            }
+
+            public PackageFeedSearchState(SearchResult<IPackageSearchMetadata> results)
+            {
+                if (results == null)
+                {
+                    throw new ArgumentNullException(nameof(results));
+                }
+                _results = results;
             }
 
             public SearchResult<IPackageSearchMetadata> Results => _results;
 
-            public LoadingStatus LoadingStatus => AggregateLoadingStatus(SourceLoadingStatus?.Values);
+            public LoadingStatus LoadingStatus
+            {
+                get
+                {
+                    if (_results == null)
+                    {
+                        // initial status when no load called before
+                        return LoadingStatus.Ready;
+                    }
+
+                    return AggregateLoadingStatus(SourceLoadingStatus?.Values);
+                }
+            }
 
             public bool IsMultiSource => SourceLoadingStatus?.Count > 1;
 
