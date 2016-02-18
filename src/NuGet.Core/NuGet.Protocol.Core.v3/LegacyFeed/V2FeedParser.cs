@@ -344,14 +344,11 @@ namespace NuGet.Protocol
                     {
                         var doc = LoadXml(await data.Content.ReadAsStreamAsync());
 
-                        // Example of what this looks like in the odata feed:
-                        // <link rel="next" href="{nextLink}" />
-                        var nextUri = (from e in doc.Root.Elements(_xnameLink)
-                                       let attr = e.Attribute("rel")
-                                       where attr != null && string.Equals(attr.Value, "next", StringComparison.OrdinalIgnoreCase)
-                                       select e.Attribute("href") into nextLink
-                                       where nextLink != null
-                                       select nextLink.Value).FirstOrDefault();
+                        // find results on the page
+                        var result = ParsePage(doc, id);
+                        results.AddRange(result);
+
+                        var nextUri = GetNextUrl(doc);
 
                         urlRequest = null;
                         if (max < 0 || results.Count < max)
@@ -367,10 +364,6 @@ namespace NuGet.Protocol
                                 urlRequest = _httpSource.GetAsync(new Uri(nextUri), log, token);
                             }
 
-                            // find results on the page
-                            var result = ParsePage(doc, id);
-                            results.AddRange(result);
-
                             page++;
                         }
                     }
@@ -382,10 +375,28 @@ namespace NuGet.Protocol
                 }
             }
 
+            if (max > -1 && results.Count > max)
+            {
+                // Remove extra results if the page contained extras
+                results = results.Take(max).ToList();
+            }
+
             return results;
         }
 
-        private static XDocument LoadXml(Stream stream)
+        internal static string GetNextUrl(XDocument doc)
+        {
+            // Example of what this looks like in the odata feed:
+            // <link rel="next" href="{nextLink}" />
+            return (from e in doc.Root.Elements(_xnameLink)
+                           let attr = e.Attribute("rel")
+                           where attr != null && string.Equals(attr.Value, "next", StringComparison.OrdinalIgnoreCase)
+                           select e.Attribute("href") into nextLink
+                           where nextLink != null
+                           select nextLink.Value).FirstOrDefault();
+        }
+
+        internal static XDocument LoadXml(Stream stream)
         {
             var xmlReader = XmlReader.Create(stream, new XmlReaderSettings()
             {
