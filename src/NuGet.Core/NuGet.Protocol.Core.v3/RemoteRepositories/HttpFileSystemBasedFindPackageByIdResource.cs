@@ -113,13 +113,10 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
 
         private async Task<SortedDictionary<NuGetVersion, PackageInfo>> FindPackagesByIdAsync(string id, CancellationToken cancellationToken)
         {
-            var result = new SortedDictionary<NuGetVersion, PackageInfo>();
-
             for (var retry = 0; retry != 3; ++retry)
             {
                 var baseUri = _baseUris[retry % _baseUris.Count].OriginalString;
                 var uri = baseUri + id.ToLowerInvariant() + "/index.json";
-                var results = new List<PackageInfo>();
 
                 try
                 {
@@ -129,42 +126,25 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         CreateCacheContext(retry),
                         Logger,
                         ignoreNotFounds: true,
-                        ensureValidContents: null,
+                        ensureValidContents: stream => HttpStreamValidation.ValidateFlatContainerIndex(uri, stream),
                         cancellationToken: cancellationToken))
                     {
                         if (data.Stream == null)
                         {
-                            return result;
+                            return new SortedDictionary<NuGetVersion, PackageInfo>();
                         }
 
                         try
                         {
-                            JObject doc;
-                            using (var reader = new StreamReader(data.Stream))
-                            {
-                                doc = JObject.Load(new JsonTextReader(reader));
-                            }
-
-                            foreach (var packageInfo in doc["versions"]
-                                .Select(x => BuildModel(baseUri, id, x.ToString()))
-                                .Where(x => x != null))
-                            {
-                                Debug.Assert(!result.ContainsKey(packageInfo.Version), $"{id} has duplicate versions");
-
-                                if (!result.ContainsKey(packageInfo.Version))
-                                {
-                                    result.Add(packageInfo.Version, packageInfo);
-                                }
-                            }
+                            return ConsumeFlatContainerIndex(data.Stream, id, baseUri);
                         }
                         catch
                         {
-                            Logger.LogMinimal(string.Format(CultureInfo.CurrentCulture, Strings.Log_FileIsCorrupt, data.CacheFileName));
+                            Logger.LogWarning(string.Format(CultureInfo.CurrentCulture, Strings.Log_FileIsCorrupt, data.CacheFileName));
+
                             throw;
                         }
                     }
-
-                    return result;
                 }
                 catch (Exception ex) when (retry < 2)
                 {
@@ -175,7 +155,6 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                 }
                 catch (Exception ex) when (retry == 2)
                 {
-                    // Fail silently by returning empty result list
                     var message = string.Format(CultureInfo.CurrentCulture, Strings.Log_FailedToRetrievePackage, uri);
                     Logger.LogError(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
 
@@ -184,6 +163,35 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
             }
 
             return null;
+        }
+
+        private SortedDictionary<NuGetVersion, PackageInfo> ConsumeFlatContainerIndex(Stream stream, string id, string baseUri)
+        {
+            JObject doc;
+            using (var reader = new StreamReader(stream))
+            {
+                doc = JObject.Load(new JsonTextReader(reader));
+            }
+
+            var streamResults = new SortedDictionary<NuGetVersion, PackageInfo>();
+
+            var versions = doc["versions"];
+            if (versions == null)
+            {
+                return streamResults;
+            }
+
+            foreach (var packageInfo in versions
+                .Select(x => BuildModel(baseUri, id, x.ToString()))
+                .Where(x => x != null))
+            {
+                if (!streamResults.ContainsKey(packageInfo.Version))
+                {
+                    streamResults.Add(packageInfo.Version, packageInfo);
+                }
+            }
+
+            return streamResults;
         }
 
         private PackageInfo BuildModel(string baseUri, string id, string version)
@@ -243,7 +251,8 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         "nupkg_" + package.Id + "." + package.Version.ToNormalizedString(),
                         CreateCacheContext(retry),
                         Logger,
-                        ensureValidContents: null,
+                        ignoreNotFounds: false,
+                        ensureValidContents: stream => HttpStreamValidation.ValidateNupkg(package.ContentUri, stream),
                         cancellationToken: cancellationToken))
                     {
                         return new NupkgEntry

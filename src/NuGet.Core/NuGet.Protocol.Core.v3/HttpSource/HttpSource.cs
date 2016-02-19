@@ -70,28 +70,11 @@ namespace NuGet.Protocol
             _messageHandlerFactory = messageHandlerFactory;
             _retryHandler = new HttpRetryHandler();
         }
-
-        internal Task<HttpSourceResult> GetAsync(string uri,
-            string cacheKey,
-            HttpSourceCacheContext context,
-            ILogger log,
-            Action<Stream> ensureValidContents,
-            CancellationToken cancellationToken)
-        {
-            return GetAsync(
-                uri,
-                cacheKey,
-                context,
-                log,
-                ignoreNotFounds: false,
-                ensureValidContents: null,
-                cancellationToken: cancellationToken);
-        }
-
+        
         /// <summary>
         /// Caching Get request.
         /// </summary>
-        internal async Task<HttpSourceResult> GetAsync(string uri,
+        public async Task<HttpSourceResult> GetAsync(string uri,
             string cacheKey,
             HttpSourceCacheContext cacheContext,
             ILogger log,
@@ -102,11 +85,28 @@ namespace NuGet.Protocol
             var sw = new Stopwatch();
             sw.Start();
 
-            var result = await TryCache(uri, cacheKey, cacheContext, log, ensureValidContents, cancellationToken);
+            var result = await TryCache(uri, cacheKey, cacheContext, log, cancellationToken);
             if (result.Stream != null)
             {
                 log.LogInformation(string.Format(CultureInfo.InvariantCulture, _requestLogFormat, "CACHE", uri));
-                return result;
+
+                // Validate the content fetched from the cache.
+                try
+                {
+                    ensureValidContents?.Invoke(result.Stream);
+
+                    result.Stream.Seek(0, SeekOrigin.Begin);
+
+                    return result;
+                }
+                catch (Exception e)
+                {
+                    result.Stream.Dispose();
+                    string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_InvalidCacheEntry, uri)
+                                     + Environment.NewLine
+                                     + ExceptionUtilities.DisplayMessage(e);
+                    log.LogWarning(message);
+                }
             }
 
             log.LogInformation(string.Format(CultureInfo.InvariantCulture, _requestLogFormat, "GET", uri));
@@ -129,7 +129,7 @@ namespace NuGet.Protocol
 
                 response.EnsureSuccessStatusCode();
 
-                await CreateCacheFile(result, response, cacheContext, cancellationToken);
+                await CreateCacheFile(result, response, cacheContext, ensureValidContents, cancellationToken);
 
                 log.LogInformation(string.Format(CultureInfo.InvariantCulture,
                     _responseLogFormat, response.StatusCode, uri, sw.ElapsedMilliseconds));
@@ -401,6 +401,7 @@ namespace NuGet.Protocol
             HttpSourceResult result,
             HttpResponseMessage response,
             HttpSourceCacheContext context,
+            Action<Stream> ensureValidContents,
             CancellationToken cancellationToken)
         {
             var newFile = result.CacheFileName + "-new";
@@ -435,6 +436,10 @@ namespace NuGet.Protocol
                             await responseStream.CopyToAsync(stream, bufferSize: 8192, cancellationToken: token);
                             await stream.FlushAsync(cancellationToken);
                         }
+
+                        // Validate the content before putting it into the cache.
+                        stream.Seek(0, SeekOrigin.Begin);
+                        ensureValidContents?.Invoke(stream);
                     }
 
                     if (File.Exists(result.CacheFileName))
@@ -478,7 +483,6 @@ namespace NuGet.Protocol
             string cacheKey,
             HttpSourceCacheContext context,
             ILogger log,
-            Action<Stream> ensureValidContents,
             CancellationToken token)
         {
             var baseFolderName = RemoveInvalidFileNameChars(ComputeHash(_baseUri.OriginalString));
@@ -511,25 +515,12 @@ namespace NuGet.Protocol
                                 FileShare.Read | FileShare.Delete,
                                 BufferSize,
                                 useAsync: true);
-                            
-                            try
+
+                            return Task.FromResult(new HttpSourceResult
                             {
-                                ensureValidContents?.Invoke(stream);
-                                stream.Seek(0, SeekOrigin.Begin);
-                                return Task.FromResult(new HttpSourceResult
-                                {
-                                    CacheFileName = cacheFile,
-                                    Stream = stream,
-                                });
-                            }
-                            catch (Exception e)
-                            {
-                                stream.Dispose();
-                                string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_InvalidCacheEntry, uri)
-                                                 + Environment.NewLine
-                                                 + ExceptionUtilities.DisplayMessage(e);
-                                log.LogWarning(message);
-                            }
+                                CacheFileName = cacheFile,
+                                Stream = stream,
+                            });
                         }
                     }
 

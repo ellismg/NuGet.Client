@@ -31,7 +31,6 @@ namespace Test.Utility
             string cacheKey,
             HttpSourceCacheContext context,
             ILogger log,
-            Action<Stream> ensureValidContents,
             CancellationToken token)
         {
             var result = new HttpSourceResult();

@@ -255,4 +255,25 @@
   <data name="Log_InvalidCacheEntry" xml:space="preserve">
     <value>An invalid cache entry was found for URL '{0}' and will be replaced.</value>
   </data>
+  <data name="Protocol_FlatContainerIndexVersionsNotArray" xml:space="preserve">
+    <value>The 'versions' property at '{0}' must be an array.</value>
+  </data>
+  <data name="Protocol_InvalidJsonObject" xml:space="preserve">
+    <value>The content at '{0}' is not a valid JSON object.</value>
+  </data>
+  <data name="Log_InvalidNupkgFromUrl" xml:space="preserve">
+    <value>The nupkg at '{0}' is not valid.</value>
+  </data>
+  <data name="Log_FailedToReadServiceIndex" xml:space="preserve">
+    <value>Unable to load the service index for source {0}.</value>
+  </data>
+  <data name="Log_RetryingServiceIndex" xml:space="preserve">
+    <value>Retrying getting the service index for source {0}.</value>
+  </data>
+  <data name="Protocol_InvalidServiceIndex" xml:space="preserve">
+    <value>The source does not have the 'version' property at '{0}'.</value>
+  </data>
+  <data name="Protocol_InvalidXml" xml:space="preserve">
+    <value>The content at '{0}' is not valid XML.</value>
+  </data>
 </root>
