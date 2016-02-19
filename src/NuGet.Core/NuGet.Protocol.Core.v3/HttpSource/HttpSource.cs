@@ -75,9 +75,17 @@ namespace NuGet.Protocol
             string cacheKey,
             HttpSourceCacheContext context,
             ILogger log,
+            Action<Stream> ensureValidContents,
             CancellationToken cancellationToken)
         {
-            return GetAsync(uri, cacheKey, context, log, ignoreNotFounds: false, cancellationToken: cancellationToken);
+            return GetAsync(
+                uri,
+                cacheKey,
+                context,
+                log,
+                ignoreNotFounds: false,
+                ensureValidContents: null,
+                cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -88,12 +96,13 @@ namespace NuGet.Protocol
             HttpSourceCacheContext cacheContext,
             ILogger log,
             bool ignoreNotFounds,
+            Action<Stream> ensureValidContents,
             CancellationToken cancellationToken)
         {
             var sw = new Stopwatch();
             sw.Start();
 
-            var result = await TryCache(uri, cacheKey, cacheContext, cancellationToken);
+            var result = await TryCache(uri, cacheKey, cacheContext, log, ensureValidContents, cancellationToken);
             if (result.Stream != null)
             {
                 log.LogInformation(string.Format(CultureInfo.InvariantCulture, _requestLogFormat, "CACHE", uri));
@@ -464,9 +473,12 @@ namespace NuGet.Protocol
                 token: cancellationToken);
         }
 
-        protected virtual async Task<HttpSourceResult> TryCache(string uri,
+        protected virtual async Task<HttpSourceResult> TryCache(
+            string uri,
             string cacheKey,
             HttpSourceCacheContext context,
+            ILogger log,
+            Action<Stream> ensureValidContents,
             CancellationToken token)
         {
             var baseFolderName = RemoveInvalidFileNameChars(ComputeHash(_baseUri.OriginalString));
@@ -499,12 +511,25 @@ namespace NuGet.Protocol
                                 FileShare.Read | FileShare.Delete,
                                 BufferSize,
                                 useAsync: true);
-
-                            return Task.FromResult(new HttpSourceResult
+                            
+                            try
                             {
-                                CacheFileName = cacheFile,
-                                Stream = stream,
-                            });
+                                ensureValidContents?.Invoke(stream);
+                                stream.Seek(0, SeekOrigin.Begin);
+                                return Task.FromResult(new HttpSourceResult
+                                {
+                                    CacheFileName = cacheFile,
+                                    Stream = stream,
+                                });
+                            }
+                            catch (Exception e)
+                            {
+                                stream.Dispose();
+                                string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_InvalidCacheEntry, uri)
+                                                 + Environment.NewLine
+                                                 + ExceptionUtilities.DisplayMessage(e);
+                                log.LogWarning(message);
+                            }
                         }
                     }
 

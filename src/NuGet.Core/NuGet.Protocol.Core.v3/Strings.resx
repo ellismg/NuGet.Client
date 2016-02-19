@@ -252,4 +252,7 @@
   <data name="Log_FailedToFindPackage" xml:space="preserve">
     <value>Can't find Package '{0}' from source '{1}'.</value>
   </data>
+  <data name="Log_InvalidCacheEntry" xml:space="preserve">
+    <value>An invalid cache entry was found for URL '{0}' and will be replaced.</value>
+  </data>
 </root>

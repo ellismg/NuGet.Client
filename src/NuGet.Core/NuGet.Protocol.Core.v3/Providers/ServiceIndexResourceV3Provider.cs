@@ -49,7 +49,13 @@ namespace NuGet.Protocol.Core.v3
             // Use default caching
             var cacheContext = new HttpSourceCacheContext();
 
-            using (var sourceResponse = await client.GetAsync(url, "service_index", cacheContext, log, token))
+            using (var sourceResponse = await client.GetAsync(
+                url,
+                "service_index",
+                cacheContext,
+                log,
+                ensureValidContents: null,
+                cancellationToken: token))
             {
                 if (sourceResponse.Stream != null)
                 {

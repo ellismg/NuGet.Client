@@ -129,7 +129,8 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                             $"list_{id}_page{page}",
                             CreateCacheContext(retry),
                             Logger,
-                            cancellationToken))
+                            ensureValidContents: null,
+                            cancellationToken: cancellationToken))
                         {
                             try
                             {
@@ -239,7 +240,8 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         "nupkg_" + package.Id + "." + package.Version,
                         CreateCacheContext(retry),
                         Logger,
-                        cancellationToken))
+                        ensureValidContents: null,
+                        cancellationToken: cancellationToken))
                     {
                         return new NupkgEntry
                         {

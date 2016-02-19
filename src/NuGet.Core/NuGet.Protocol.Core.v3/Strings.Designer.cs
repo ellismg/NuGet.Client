@@ -258,6 +258,15 @@ namespace NuGet.Protocol.Core.v3 {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to An invalid cache entry was found for URL &apos;{0}&apos; and will be replaced..
+        /// </summary>
+        internal static string Log_InvalidCacheEntry {
+            get {
+                return ResourceManager.GetString("Log_InvalidCacheEntry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Retrying &apos;{0}&apos; for source {1}..
         /// </summary>
         internal static string Log_RetryingFindPackagesById {

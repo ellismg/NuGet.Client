@@ -164,7 +164,8 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         "nupkg_" + package.Identity.Id + "." + package.Identity.Version.ToNormalizedString(),
                         CreateCacheContext(retry),
                         Logger,
-                        cancellationToken))
+                        ensureValidContents: null,
+                        cancellationToken: cancellationToken))
                     {
                         return new NupkgEntry
                         {

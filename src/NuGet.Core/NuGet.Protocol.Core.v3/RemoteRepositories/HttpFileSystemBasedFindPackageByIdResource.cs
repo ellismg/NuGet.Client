@@ -123,12 +123,13 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
 
                 try
                 {
-
-                    using (var data = await _httpSource.GetAsync(uri,
+                    using (var data = await _httpSource.GetAsync(
+                        uri,
                         $"list_{id}",
                         CreateCacheContext(retry),
                         Logger,
                         ignoreNotFounds: true,
+                        ensureValidContents: null,
                         cancellationToken: cancellationToken))
                     {
                         if (data.Stream == null)
@@ -242,7 +243,8 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         "nupkg_" + package.Id + "." + package.Version.ToNormalizedString(),
                         CreateCacheContext(retry),
                         Logger,
-                        cancellationToken))
+                        ensureValidContents: null,
+                        cancellationToken: cancellationToken))
                     {
                         return new NupkgEntry
                         {

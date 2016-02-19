@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Configuration;
+using NuGet.Logging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
@@ -23,11 +25,13 @@ namespace Test.Utility
         {
             _responses = responses;
         }
-
+        
         protected override Task<HttpSourceResult> TryCache(
             string uri,
             string cacheKey,
             HttpSourceCacheContext context,
+            ILogger log,
+            Action<Stream> ensureValidContents,
             CancellationToken token)
         {
             var result = new HttpSourceResult();
