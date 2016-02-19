@@ -134,11 +134,11 @@ Function Install-DotnetCLI {
     [CmdletBinding()]
     param()
     Trace-Log 'Downloading Dotnet CLI'
-    &{
-        #iex (`
-        #    (new-object net.webclient).DownloadString('https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/install.ps1')`
-        #)
-     }
+
+    if (-not (Test-Path $DotNetExe))
+    {
+        &{$wc=New-Object System.Net.WebClient;$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;Invoke-Expression ($wc.DownloadString('https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/install.ps1'))}
+    }
 }
 
 # Enables delay signed build
@@ -290,7 +290,7 @@ Function Invoke-DotnetPack {
             }
 
             Verbose-Log "$DotNetExe $opts"
-            &dotnet $opts 2>&1
+            &$DotNetExe $opts 2>&1
             if (-not $?) {
                 Error-Log "Pack failed @""$_"". Code: $LASTEXITCODE"
             }
