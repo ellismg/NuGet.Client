@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "xunit": "2.1.0",
-    "Microsoft.VisualStudio.ProjectSystem.Interop": "",
+    "Microsoft.VisualStudio.ProjectSystem.Interop": "1.0.0-*",
     "NuGet.PackageManagement": {
       "target": "project"
     },
