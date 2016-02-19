@@ -48,10 +48,7 @@
     x:Key="ProjectAndSolutionViewHeightConverter" />
   <Tools:ProjectAndSolutionViewMinHeightConverter
     x:Key="ProjectAndSolutionViewMinHeightConverter"/>
-  <Tools:LoadingStatusToIconConverter
-    x:Key="LoadingStatusToIconConverter"/>
-  <Tools:MessageLevelToBrushConverter
-    x:Key="MessageLevelToBrushConverter"/>
+  <Tools:NotEqualConverter x:Key="NotEqualConverter"/>
 
   <DataTemplate
     DataType="{x:Type Tools:PackageDependencyMetadata}">

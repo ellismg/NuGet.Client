@@ -7,46 +7,47 @@
              xmlns:local="clr-namespace:NuGet.PackageManagement.UI"
              xmlns:resx="clr-namespace:NuGet.PackageManagement.UI"
              mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="300"
-             DataContext="{Binding}"
-             x:Name="parent">
+             d:DesignHeight="30" d:DesignWidth="300">
+  <UserControl.DataContext>
+    <local:LoadingStatusViewModel/>
+  </UserControl.DataContext>
   <UserControl.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary
-          Source="Resources.xaml" />
-      </ResourceDictionary.MergedDictionaries>
-      <Style 
+    <local:LoadingStatusToIconConverter x:Key="LoadingStatusToIconConverter"/>
+    <local:MessageLevelToBrushConverter x:Key="MessageLevelToBrushConverter"/>
+    <local:NotEqualConverter x:Key="NotEqualConverter"/>
+    <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    <local:LoadingStatus x:Key="LoadingStatus">Loading</local:LoadingStatus>
+    <Style 
         x:Key="LinkButtonStyle" 
         TargetType="{x:Type Button}">
-        <Setter Property="Template">
-          <Setter.Value>
-            <ControlTemplate TargetType="{x:Type Button}">
-              <TextBlock TextDecorations="Underline">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Button}">
+            <TextBlock TextDecorations="Underline">
                 <ContentPresenter />
-              </TextBlock>
-            </ControlTemplate>
-          </Setter.Value>
-        </Setter>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static resx:Brushes.ControlLinkTextKey}}" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Style.Triggers>
-          <Trigger Property="IsMouseOver" Value="true">
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static resx:Brushes.ControlLinkTextHoverKey}}" />
-          </Trigger>
-        </Style.Triggers>
-      </Style>
-    </ResourceDictionary>
+            </TextBlock>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Foreground" Value="{DynamicResource {x:Static resx:Brushes.ControlLinkTextKey}}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="true">
+          <Setter Property="Foreground" Value="{DynamicResource {x:Static resx:Brushes.ControlLinkTextHoverKey}}" />
+        </Trigger>
+      </Style.Triggers>
+    </Style>
   </UserControl.Resources>
   <Border 
     x:Name="StatusBarControl" 
     VerticalAlignment="Center" 
     Visibility="Visible" 
-    Background="{Binding Path=MessageLevel,Converter={StaticResource MessageLevelToBrushConverter}}"
-    BorderThickness="0,0,0,1">
-    <Grid Margin="0,4,0,6">
+    Background="{Binding MessageLevel,Converter={StaticResource MessageLevelToBrushConverter}}"
+    BorderThickness="0"
+    Height="22">
+    <Grid Margin="3,0">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="Auto"/>
@@ -57,22 +58,53 @@
       </Grid.ColumnDefinitions>
       <Image 
         Grid.Column="0" 
-        Source="{Binding Path=LoadingStatus,Converter={StaticResource LoadingStatusToIconConverter}}" 
-        Margin="3,3,3,3"
+        Source="{Binding LoadingStatus,Converter={StaticResource LoadingStatusToIconConverter}}" 
+        Margin="0,0,3,0"
         Stretch="Uniform" 
         HorizontalAlignment="Center" 
         VerticalAlignment="Center" 
         Height="16" 
-        Width="16" />
+        Width="16" >
+        <Image.Style>
+          <Style TargetType="{x:Type Image}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding Path=LoadingStatus,
+                Converter={StaticResource NotEqualConverter},
+                ConverterParameter={StaticResource LoadingStatus}}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Image.Style>
+      </Image>
+      <local:Spinner 
+        Grid.Column="0" 
+        Margin="0,0,3,0" 
+        HorizontalAlignment="Center" 
+        VerticalAlignment="Center" 
+        Width="16" 
+        Height="16">
+        <local:Spinner.Style>
+          <Style TargetType="{x:Type local:Spinner}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding LoadingStatus}" Value="Loading">
+                <Setter Property="Visibility" Value="Visible"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </local:Spinner.Style>
+      </local:Spinner>
       <TextBlock 
         Grid.Column="1" 
         Text="{Binding Path=StatusMessage}"
         TextWrapping="Wrap" 
         TextOptions.TextFormattingMode="Display" 
         VerticalAlignment="Center" 
-        Margin="5,0,5,0"
+        Margin="5,0"
         FontFamily="SegoeUI"
-        FontSize="12pt"
+        FontSize="12"
         Foreground="#111111"
        />
       <Button 
@@ -82,10 +114,9 @@
         VerticalAlignment="Center" 
         Content="{Binding Path=MoreItemsLinkText}" 
         Click="ShowMoreResultsButton_Click" 
-        Margin="5,0,3,0" 
-        Padding="8,2,8,2" 
+        Margin="5,0"
         FontFamily="SegoeUI"
-        FontSize="12pt"
+        FontSize="12"
         Style="{StaticResource LinkButtonStyle}" />
       <Button 
         Grid.Column="3" 
@@ -93,10 +124,9 @@
         VerticalAlignment="Center" 
         Content="{x:Static resx:Resources.Button_ShowErrors}"
         Click="ShowErrorsButton_Click"
-        Margin="5,0,3,0" 
-        Padding="8,2,8,2" 
+        Margin="5,0"
         FontFamily="SegoeUI"
-        FontSize="12pt">
+        FontSize="12">
         <Button.Style>
           <Style TargetType="{x:Type Button}" BasedOn="{StaticResource LinkButtonStyle}">
             <Setter Property="Visibility" Value="Collapsed"/>
@@ -114,10 +144,9 @@
         VerticalAlignment="Center" 
         Content="{x:Static resx:Resources.Button_RestartSearch}"
         Click="RestartSearchButton_Click" 
-        Margin="5,0,3,0" 
-        Padding="8,2,8,2" 
+        Margin="5,0" 
         FontFamily="SegoeUI"
-        FontSize="12pt">
+        FontSize="12">
         <Button.Style>
           <Style TargetType="{x:Type Button}" BasedOn="{StaticResource LinkButtonStyle}">
             <Setter Property="Visibility" Value="Collapsed"/>

@@ -10,6 +10,10 @@ namespace NuGet.PackageManagement.UI
     {
         private readonly string _loadingMessage;
 
+        public LoadingStatusViewModel()
+        {
+            _loadingMessage = string.Empty;
+        }
         public LoadingStatusViewModel(string loadingMessage)
         {
             _loadingMessage = loadingMessage;
@@ -112,13 +116,14 @@ namespace NuGet.PackageManagement.UI
             switch (vm.LoadingStatus)
             {
                 case LoadingStatus.Loading:
-                    return !vm.HasMoreItems ? MessageLevel.Info : MessageLevel.Warning;
+                    return vm.ItemsFound == 0 ? MessageLevel.Info : MessageLevel.Warning;
                 case LoadingStatus.Cancelled:
                 case LoadingStatus.ErrorOccured:
                     return MessageLevel.Error;
+                case LoadingStatus.Ready:
+                    return !vm.HasMoreItems ? MessageLevel.Info : MessageLevel.Warning;
                 case LoadingStatus.NoItemsFound:
                 case LoadingStatus.NoMoreItems:
-                case LoadingStatus.Ready:
                 case LoadingStatus.Unknown:
                 default:
                     return MessageLevel.Info;
@@ -254,7 +259,6 @@ namespace NuGet.PackageManagement.UI
         public LoadingStatusBar()
         {
             InitializeComponent();
-            DataContext = new LoadingStatusViewModel(string.Empty);
         }
 
         public void UpdateLoadingState(IItemLoaderState loaderState)
