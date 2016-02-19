@@ -8,7 +8,7 @@ $NuGetClientRoot = Split-Path -Path $PSScriptRoot -Parent
 $MSBuildExe = Join-Path ${env:ProgramFiles(x86)} 'MSBuild\14.0\Bin\msbuild.exe'
 $NuGetExe = Join-Path $NuGetClientRoot '.nuget\nuget.exe'
 $ILMerge = Join-Path $NuGetClientRoot 'packages\ILMerge.2.14.1208\tools\ILMerge.exe'
-$DnvmCmd = Join-Path $env:USERPROFILE '.dnx\bin\dnvm.cmd'
+$DotNetExe = Join-Path $NuGetClientRoot 'cli\bin\dotnet.exe'
 $Nupkgs = Join-Path $NuGetClientRoot nupkgs
 $Artifacts = Join-Path $NuGetClientRoot artifacts
 $NuGetCoreSln = Join-Path $NuGetClientRoot 'NuGet.Core.sln'
@@ -130,60 +130,15 @@ Function Install-NuGet {
     }
 }
 
-# Validates DNVM installed and installs it if missing
-Function Install-DNVM {
-    [CmdletBinding()]
-    param()
-    if (-not (Test-Path $DnvmCmd)) {
-        Trace-Log 'Downloading DNVM'
-        &{
-            $Branch='dev'
-            iex (`
-                (new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1')`
-            )
-        }
-    }
-}
-
-# Makes sure the needed dotnet cli is installed
 Function Install-DotnetCLI {
     [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$True, Position=0)]
-        [Alias('r')]
-        [ValidateSet('CLR', 'CoreCLR')]
-        [string]$Runtime,
-        [Alias('v')]
-        [string]$Version = $DefaultDnxVersion,
-        [Alias('a')]
-        [string]$Arch = $DefaultDnxArch,
-        [switch]$Default
-    )
-    Install-DNVM
-    $env:DNX_FEED = 'https://www.nuget.org/api/v2'
-    Verbose-Log "dnvm install $Version -runtime $Runtime -arch $Arch"
-    if ($Default) {
-        & dnvm install $Version -runtime $Runtime -arch $Arch -alias default 2>&1
-    }
-    else {
-        & dnvm install $Version -runtime $Runtime -arch $Arch 2>&1
-    }
-}
-
-Function Use-DNX {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$True, Position=0)]
-        [Alias('r')]
-        [ValidateSet('CLR', 'CoreCLR')]
-        [string]$Runtime,
-        [Alias('v')]
-        [string]$Version = $DefaultDnxVersion,
-        [Alias('a')]
-        [string]$Arch = $DefaultDnxArch
-    )
-    Verbose-Log "dnvm use $Version -runtime $Runtime -arch $Arch"
-    & dnvm use $Version -runtime $Runtime -arch $Arch 2>&1
+    param()
+    Trace-Log 'Downloading Dotnet CLI'
+    &{
+        #iex (`
+        #    (new-object net.webclient).DownloadString('https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/install.ps1')`
+        #)
+     }
 }
 
 # Enables delay signed build
@@ -273,9 +228,6 @@ Function Restore-SolutionPackages{
     if ($MSBuildVersion) {
         $opts += '-MSBuildVersion', $MSBuildVersion
     }
-    if (-not $VerbosePreference) {
-        $opts += '-Verbosity', 'quiet'
-    }
 
     Trace-Log "Restoring packages @""$NuGetClientRoot"""
     Verbose-Log "$NuGetExe $opts"
@@ -288,7 +240,7 @@ Function Restore-SolutionPackages{
 # Restore nuget.core.sln projects
 Function Restore-XProjects {
 
-    $opts = 'restore', $NuGetCoreSln, '-Verbosity', 'quiet'
+    $opts = 'restore', $NuGetCoreSln
 
     Trace-Log "Restoring packages for @""$NuGetCoreSln"""
     Verbose-Log "nuget.exe $opts"
@@ -320,13 +272,13 @@ Function Invoke-DotnetPack {
     Begin {
         $BuildNumber = Format-BuildNumber $BuildNumber
 
-        ## Setting the DNX build version
+        ## Setting the Dotnet build version
         if($ReleaseLabel -ne 'Release') {
-            $env:DNX_BUILD_VERSION="${ReleaseLabel}-${BuildNumber}"
+            $env:DOTNET_BUILD_VERSION="${ReleaseLabel}-${BuildNumber}"
         }
 
-        # Setting the DNX AssemblyFileVersion
-        $env:DNX_ASSEMBLY_FILE_VERSION=$BuildNumber
+        # Setting the Dotnet AssemblyFileVersion
+        $env:DOTNET_ASSEMBLY_FILE_VERSION=$BuildNumber
     }
     Process {
         $XProjectLocations | %{
@@ -337,7 +289,7 @@ Function Invoke-DotnetPack {
                 $opts += '--output', (Join-Path $Output (Split-Path $_ -Leaf))
             }
 
-            Verbose-Log "dotnet $opts"
+            Verbose-Log "$DotNetExe $opts"
             &dotnet $opts 2>&1
             if (-not $?) {
                 Error-Log "Pack failed @""$_"". Code: $LASTEXITCODE"
