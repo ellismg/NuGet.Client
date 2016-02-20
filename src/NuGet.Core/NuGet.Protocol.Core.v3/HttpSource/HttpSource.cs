@@ -31,6 +31,7 @@ namespace NuGet.Protocol
         private int _authRetries;
         private HttpHandlerResource _httpHandler;
         private CredentialHelper _credentials;
+        private string _httpCacheDirectory;
         private Guid _lastAuthId = Guid.NewGuid();
         private readonly PackageSource _packageSource;
         private readonly string _requestLogFormat = "  {0} {1}";
@@ -478,6 +479,21 @@ namespace NuGet.Protocol
                 token: cancellationToken);
         }
 
+        public string HttpCacheDirectory
+        {
+            get
+            {
+                if (_httpCacheDirectory == null)
+                {
+                    _httpCacheDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.HttpCacheDirectory);
+                }
+
+                return _httpCacheDirectory;
+            }
+
+            set { _httpCacheDirectory = value; }
+        }
+
         protected virtual async Task<HttpSourceResult> TryCache(
             string uri,
             string cacheKey,
@@ -488,7 +504,7 @@ namespace NuGet.Protocol
             var baseFolderName = RemoveInvalidFileNameChars(ComputeHash(_baseUri.OriginalString));
             var baseFileName = RemoveInvalidFileNameChars(cacheKey) + ".dat";
             var cacheAgeLimit = context.MaxAge;
-            var cacheFolder = Path.Combine(NuGetEnvironment.GetFolderPath(NuGetFolderPath.HttpCacheDirectory), baseFolderName);
+            var cacheFolder = Path.Combine(HttpCacheDirectory, baseFolderName);
             var cacheFile = Path.Combine(cacheFolder, baseFileName);
 
             if (!Directory.Exists(cacheFolder)
