@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonResources.cs" />
+    <Compile Include="Extensibility\VsFrameworkParser.cs" />
     <Compile Include="Extensibility\VsFrameworkCompatibility.cs" />
     <Compile Include="Extensibility\VsPackageInstaller.cs" />
     <Compile Include="Extensibility\VsPackageInstallerEvents.cs" />
@@ -84,6 +85,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>VsResources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utility\FrameworkNameUtility.cs" />
     <Compile Include="Utility\PumpingJTF.cs" />
     <Compile Include="Utility\XmlUtility.cs" />
     <Compile Include="VSAPIProjectContext.cs" />

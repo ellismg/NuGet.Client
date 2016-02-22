@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.Versioning;
 using NuGet.Frameworks;
 using NuGet.VisualStudio.Implementation.Resources;
+using NuGet.VisualStudio.Implementation.Utility;
 
 namespace NuGet.VisualStudio
 {
@@ -19,7 +20,7 @@ namespace NuGet.VisualStudio
             return DefaultFrameworkNameProvider
                 .Instance
                 .GetNetStandardVersions()
-                .Select(GetFrameworkName);
+                .Select(FrameworkNameUtility.GetFrameworkName);
         }
 
         public IEnumerable<FrameworkName> GetFrameworksSupportingNetStandard(FrameworkName frameworkName)
@@ -29,7 +30,7 @@ namespace NuGet.VisualStudio
                 throw new ArgumentNullException(nameof(frameworkName));
             }
 
-            var nuGetFramework = GetNuGetFramework(frameworkName);
+            var nuGetFramework = FrameworkNameUtility.GetNuGetFramework(frameworkName);
 
             if (!StringComparer.OrdinalIgnoreCase.Equals(
                 nuGetFramework.Framework,
@@ -43,17 +44,33 @@ namespace NuGet.VisualStudio
             return CompatibilityListProvider
                 .Default
                 .GetFrameworksSupporting(nuGetFramework)
-                .Select(GetFrameworkName);
+                .Select(FrameworkNameUtility.GetFrameworkName);
         }
 
-        private NuGetFramework GetNuGetFramework(FrameworkName frameworkName)
+        public FrameworkName GetNearest(FrameworkName targetFramework, IEnumerable<FrameworkName> frameworks)
         {
-            return NuGetFramework.ParseFrameworkName(frameworkName.ToString(), DefaultFrameworkNameProvider.Instance);
-        }
+            if (targetFramework == null)
+            {
+                throw new ArgumentNullException(nameof(targetFramework));
+            }
 
-        private FrameworkName GetFrameworkName(NuGetFramework nuGetFramework)
-        {
-            return new FrameworkName(nuGetFramework.DotNetFrameworkName);
+            if (frameworks == null)
+            {
+                throw new ArgumentNullException(nameof(frameworks));
+            }
+
+            var nuGetTargetFramework = FrameworkNameUtility.GetNuGetFramework(targetFramework);
+            var nuGetFrameworks = frameworks.Select(FrameworkNameUtility.GetNuGetFramework);
+            
+            var reducer = new FrameworkReducer();
+            var nearest = reducer.GetNearest(nuGetTargetFramework, nuGetFrameworks);
+
+            if (nearest == null)
+            {
+                return null;
+            }
+
+            return FrameworkNameUtility.GetFrameworkName(nearest);
         }
     }
 }

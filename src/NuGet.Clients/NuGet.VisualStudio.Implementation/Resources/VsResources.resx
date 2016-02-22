@@ -171,4 +171,7 @@
   <data name="InvalidNetStandardFramework" xml:space="preserve">
     <value>The specified framework name '{0}' must be .NETStandard.</value>
   </data>
+  <data name="InvalidFrameworkForParsing" xml:space="preserve">
+    <value>The specified framework name '{0}' could not be parsed.</value>
+  </data>
 </root>
