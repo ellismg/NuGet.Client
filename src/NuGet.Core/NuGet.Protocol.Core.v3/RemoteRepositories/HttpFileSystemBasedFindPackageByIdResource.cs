@@ -126,7 +126,7 @@ namespace NuGet.Protocol.Core.v3.RemoteRepositories
                         CreateCacheContext(retry),
                         Logger,
                         ignoreNotFounds: true,
-                        ensureValidContents: stream => HttpStreamValidation.ValidateFlatContainerIndex(uri, stream),
+                        ensureValidContents: stream => HttpStreamValidation.ValidateJObject(uri, stream),
                         cancellationToken: cancellationToken))
                     {
                         if (data.Stream == null)

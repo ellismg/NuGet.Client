@@ -1,26 +1,42 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using NuGet.Packaging;
 
 namespace NuGet.Protocol.Core.v3
 {
     public static class HttpStreamValidation
     {
-        public static void ValidateJObject(string uri, Stream stream, Action<JObject> validate)
+        public static void ValidateJObject(string uri, Stream stream)
         {
             try
             {
-                using (var reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true))
+                using (var reader = new StreamReader(
+                    stream: stream,
+                    encoding: Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: false,
+                    bufferSize: 4096,
+                    leaveOpen: true))
                 using (var jsonReader = new JsonTextReader(reader) { CloseInput = false })
                 {
-                    var jObject = JObject.Load(jsonReader);
-                    validate(jObject);
+                    var firstTokenFound = jsonReader.Read();
+                    if (!firstTokenFound || jsonReader.TokenType != JsonToken.StartObject)
+                    {
+                        throw new JsonReaderException("The JSON document is not an object.");   
+                    }
+
+                    while (jsonReader.Read())
+                    {
+                    }
+
+                    if (jsonReader.Depth != 0)
+                    {
+                        throw new JsonReaderException("The JSON document is not complete.");
+                    }
                 }
             }
             catch (Exception e) when (!(e is InvalidDataException))
@@ -33,17 +49,15 @@ namespace NuGet.Protocol.Core.v3
                 throw new InvalidDataException(message, e);
             }
         }
-        public static void ValidateJObject(string uri, Stream stream)
-        {
-            ValidateJObject(uri, stream, o => { });
-        }
 
         public static void ValidateNupkg(string uri, Stream stream)
         {
             try
             {
-                using (var reader = new PackageArchiveReader(stream, leaveStreamOpen: true))
-                using (reader.GetNuspec())
+                using (var reader = new ZipArchive(
+                    stream: stream,
+                    mode: ZipArchiveMode.Read,
+                    leaveOpen: true))
                 {
                 }
             }
@@ -58,61 +72,27 @@ namespace NuGet.Protocol.Core.v3
             }
         }
 
-        public static void ValidateServiceIndex(string uri, Stream stream)
-        {
-            ValidateJObject(
-                uri,
-                stream,
-                jObject =>
-                {
-                    var resources = jObject["resources"];
-                    if (resources == null)
-                    {
-                        return;
-                    }
-
-                    if (!(resources is JArray))
-                    {
-                        string message = string.Format(
-                            CultureInfo.CurrentCulture,
-                            Strings.Protocol_FlatContainerIndexVersionsNotArray,
-                            uri);
-
-                        throw new InvalidDataException(message);
-                    }
-                });
-        }
-
-        public static void ValidateFlatContainerIndex(string uri, Stream stream)
-        {
-            ValidateJObject(
-                uri,
-                stream,
-                jObject =>
-                {
-                    var versions = jObject["versions"];
-                    if (versions == null)
-                    {
-                        return;
-                    }
-
-                    if (!(versions is JArray))
-                    {
-                        string message = string.Format(
-                            CultureInfo.CurrentCulture,
-                            Strings.Protocol_FlatContainerIndexVersionsNotArray,
-                            uri);
-
-                        throw new InvalidDataException(message);
-                    }
-                });
-        }
-
         public static void ValidateXml(string uri, Stream stream)
         {
             try
             {
-                XDocument.Load(stream);
+                using (var reader = new StreamReader(
+                    stream: stream,
+                    encoding: Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: false,
+                    bufferSize: 4096,
+                    leaveOpen: true))
+                using (var xmlReader = XmlReader.Create(reader))
+                {
+                    while (xmlReader.Read())
+                    {
+                    }
+
+                    if (xmlReader.Depth != 0)
+                    {
+                        throw new JsonReaderException("The XML document is not complete.");
+                    }
+                }
             }
             catch (Exception e)
             {

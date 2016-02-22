@@ -86,7 +86,7 @@ namespace NuGet.Protocol
             var sw = new Stopwatch();
             sw.Start();
 
-            var result = await TryCache(uri, cacheKey, cacheContext, log, cancellationToken);
+            var result = await TryReadCacheFile(uri, cacheKey, cacheContext, log, cancellationToken);
             if (result.Stream != null)
             {
                 log.LogInformation(string.Format(CultureInfo.InvariantCulture, _requestLogFormat, "CACHE", uri));
@@ -103,6 +103,8 @@ namespace NuGet.Protocol
                 catch (Exception e)
                 {
                     result.Stream.Dispose();
+                    result.Stream = null;
+
                     string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_InvalidCacheEntry, uri)
                                      + Environment.NewLine
                                      + ExceptionUtilities.DisplayMessage(e);
@@ -494,7 +496,7 @@ namespace NuGet.Protocol
             set { _httpCacheDirectory = value; }
         }
 
-        protected virtual async Task<HttpSourceResult> TryCache(
+        protected virtual async Task<HttpSourceResult> TryReadCacheFile(
             string uri,
             string cacheKey,
             HttpSourceCacheContext context,

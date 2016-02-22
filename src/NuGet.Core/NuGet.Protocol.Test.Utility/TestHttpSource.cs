@@ -26,7 +26,7 @@ namespace Test.Utility
             _responses = responses;
         }
         
-        protected override Task<HttpSourceResult> TryCache(
+        protected override Task<HttpSourceResult> TryReadCacheFile(
             string uri,
             string cacheKey,
             HttpSourceCacheContext context,

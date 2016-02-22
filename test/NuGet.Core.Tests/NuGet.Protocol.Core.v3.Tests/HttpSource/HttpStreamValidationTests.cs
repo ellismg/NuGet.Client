@@ -1,10 +1,8 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using Newtonsoft.Json;
-using NuGet.Packaging.Core;
 using NuGet.Test.Utility;
 using Xunit;
 
@@ -15,7 +13,7 @@ namespace NuGet.Protocol.Core.v3.Tests
         private const string Uri = "http://example/foo/bar";
 
         [Fact]
-        public void HttpStreamValidation_ValidateJObject_RejectsBrokenJsonObjects()
+        public void HttpStreamValidation_ValidateJObject_RejectsIncompleteJsonObjects()
         {
             // Arrange
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
@@ -26,7 +24,25 @@ namespace NuGet.Protocol.Core.v3.Tests
             // Act & Assert
             var actual = Assert.Throws<InvalidDataException>(() =>
             {
-                HttpStreamValidation.ValidateJObject(Uri, stream, o => { });
+                HttpStreamValidation.ValidateJObject(Uri, stream);
+            });
+
+            Assert.IsType<JsonReaderException>(actual.InnerException);
+        }
+
+        [Fact]
+        public void HttpStreamValidation_ValidateJObject_RejectsBrokenJsonObjects()
+        {
+            // Arrange
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
+                {
+                    ""foo"": 1,
+                    ""bar"" []"));
+
+            // Act & Assert
+            var actual = Assert.Throws<InvalidDataException>(() =>
+            {
+                HttpStreamValidation.ValidateJObject(Uri, stream);
             });
 
             Assert.IsType<JsonReaderException>(actual.InnerException);
@@ -41,39 +57,10 @@ namespace NuGet.Protocol.Core.v3.Tests
             // Act & Assert
             var actual = Assert.Throws<InvalidDataException>(() =>
             {
-                HttpStreamValidation.ValidateJObject(Uri, stream, o => { });
+                HttpStreamValidation.ValidateJObject(Uri, stream);
             });
 
             Assert.IsType<JsonReaderException>(actual.InnerException);
-        }
-
-        [Fact]
-        public void HttpStreamValidation_ValidateJObject_RejectsFailedTest()
-        {
-            // Arrange
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
-                {
-                    ""foo"": 1,
-                    ""bar"": 2
-                }"));
-            var innerException = new FormatException("bad!");
-
-            // Act & Assert
-            var actual = Assert.Throws<InvalidDataException>(() =>
-            {
-                HttpStreamValidation.ValidateJObject(
-                    Uri,
-                    stream,
-                    o =>
-                    {
-                        if (o["foo"].ToObject<int>() != 9001)
-                        {
-                            throw innerException;
-                        }
-                    });
-            });
-
-            Assert.Same(innerException, actual.InnerException);
         }
 
         [Fact]
@@ -87,50 +74,7 @@ namespace NuGet.Protocol.Core.v3.Tests
                 }"));
 
             // Act & Assert
-            HttpStreamValidation.ValidateJObject(Uri, stream, o => { });
-        }
-
-        [Fact]
-        public void HttpStreamValidation_ValidateFlatContainerIndex_RejectsInvalidVersions()
-        {
-            // Arrange
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
-                {
-                    ""versions"": false
-                }"));
-
-            // Act & Assert
-            var actual = Assert.Throws<InvalidDataException>(() =>
-            {
-                HttpStreamValidation.ValidateFlatContainerIndex(Uri, stream);
-            });
-
-            Assert.Null(actual.InnerException);
-        }
-
-        [Fact]
-        public void HttpStreamValidation_ValidateFlatContainerIndex_AcceptsMinimal()
-        {
-            // Arrange
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
-                {
-                    ""versions"": []
-                }"));
-
-            // Act & Assert
-            HttpStreamValidation.ValidateFlatContainerIndex(Uri, stream);
-        }
-
-        [Fact]
-        public void HttpStreamValidation_ValidateFlatContainerIndex_AcceptsMissingVersions()
-        {
-            // Arrange
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"
-                {
-                }"));
-
-            // Act & Assert
-            HttpStreamValidation.ValidateFlatContainerIndex(Uri, stream);
+            HttpStreamValidation.ValidateJObject(Uri, stream);
         }
 
         [Fact]
@@ -148,31 +92,6 @@ namespace NuGet.Protocol.Core.v3.Tests
                 });
 
                 Assert.IsType<InvalidDataException>(actual.InnerException);
-            }
-        }
-
-        [Fact]
-        public void HttpStreamValidation_ValidateNupkg_RejectsMissingNuspecNupkg()
-        {
-            // Arrange
-            using (var stream = new MemoryStream())
-            {
-                using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
-                {
-                    zip.AddEntry("assembly.dll", new byte[0]);
-                }
-
-                stream.Seek(0, SeekOrigin.Begin);
-
-                // Act & Assert
-                var actual = Assert.Throws<InvalidDataException>(() =>
-                {
-                    HttpStreamValidation.ValidateNupkg(
-                        Uri,
-                        stream);
-                });
-
-                Assert.IsType<PackagingException>(actual.InnerException);
             }
         }
 
@@ -203,6 +122,27 @@ namespace NuGet.Protocol.Core.v3.Tests
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"<?xml version=""1.0"" encoding=""utf-8""?>
                 <entry>
                 </ent
+                ")))
+            {
+                // Act & Assert
+                var actual = Assert.Throws<InvalidDataException>(() =>
+                {
+                    HttpStreamValidation.ValidateXml(
+                        Uri,
+                        stream);
+                });
+
+                Assert.IsType<XmlException>(actual.InnerException);
+            }
+        }
+
+        [Fact]
+        public void HttpStreamValidation_ValidateXml_RejectsIncompleteBroken()
+        {
+            // Arrange
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(@"<?xml version=""1.0"" encoding=""utf-8""?>
+                <entry>
+                <another>
                 ")))
             {
                 // Act & Assert

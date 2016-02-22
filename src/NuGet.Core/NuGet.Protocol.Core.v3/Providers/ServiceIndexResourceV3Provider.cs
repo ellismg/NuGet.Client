@@ -126,7 +126,7 @@ namespace NuGet.Protocol.Core.v3
                         cacheContext,
                         log,
                         ignoreNotFounds: false,
-                        ensureValidContents: stream => HttpStreamValidation.ValidateJObject(url, stream, o => { }),
+                        ensureValidContents: stream => HttpStreamValidation.ValidateJObject(url, stream),
                         cancellationToken: token))
                     {
                         return ConsumeServiceIndexStream(sourceResponse.Stream, utcNow);

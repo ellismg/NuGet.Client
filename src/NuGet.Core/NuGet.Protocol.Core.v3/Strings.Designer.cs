@@ -285,7 +285,7 @@ namespace NuGet.Protocol.Core.v3 {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Retrying &apos;{0}&apos; for source {1}..
+        ///    Looks up a localized string similar to Retrying &apos;{0}&apos; for source &apos;{1}&apos;..
         /// </summary>
         internal static string Log_RetryingFindPackagesById {
             get {
@@ -294,7 +294,7 @@ namespace NuGet.Protocol.Core.v3 {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Retrying getting the service index for source {0}..
+        ///    Looks up a localized string similar to Retrying service index request for source &apos;{0}&apos;..
         /// </summary>
         internal static string Log_RetryingServiceIndex {
             get {
