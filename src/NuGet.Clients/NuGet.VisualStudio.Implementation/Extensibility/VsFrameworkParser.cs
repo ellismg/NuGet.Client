@@ -11,7 +11,7 @@ using NuGet.VisualStudio.Implementation.Utility;
 
 namespace NuGet.VisualStudio
 {
-    [Export(typeof(IVsFrameworkCompatibility))]
+    [Export(typeof(IVsFrameworkParser))]
     public class VsFrameworkParser : IVsFrameworkParser
     {
         public FrameworkName ParseFrameworkName(string shortOrFullName)

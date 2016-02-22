@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonResources.cs" />
+    <Compile Include="Extensibility\VsSemanticVersionComparer.cs" />
     <Compile Include="Extensibility\VsFrameworkParser.cs" />
     <Compile Include="Extensibility\VsFrameworkCompatibility.cs" />
     <Compile Include="Extensibility\VsPackageInstaller.cs" />

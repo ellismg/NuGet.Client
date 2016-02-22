@@ -174,4 +174,7 @@
   <data name="InvalidFrameworkForParsing" xml:space="preserve">
     <value>The specified framework name '{0}' could not be parsed.</value>
   </data>
+  <data name="InvalidSemanticVersionStringIncludingInput" xml:space="preserve">
+    <value>The provided version string '{0}' is not a valid semantic version.</value>
+  </data>
 </root>

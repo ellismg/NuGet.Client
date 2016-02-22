@@ -97,6 +97,15 @@ namespace NuGet.VisualStudio.Implementation.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The provided version string &apos;{0}&apos; is not a valid semantic version..
+        /// </summary>
+        internal static string InvalidSemanticVersionStringIncludingInput {
+            get {
+                return ResourceManager.GetString("InvalidSemanticVersionStringIncludingInput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified source &apos;{0}&apos; is invalid. Please provide a valid source..
         /// </summary>
         internal static string InvalidSource {
