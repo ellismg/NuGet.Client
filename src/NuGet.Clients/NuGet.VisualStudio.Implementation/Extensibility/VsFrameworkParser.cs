@@ -33,7 +33,7 @@ namespace NuGet.VisualStudio
                     VsResources.InvalidFrameworkForParsing,
                     shortOrFullName);
 
-                throw new FormatException(message, e);
+                throw new ArgumentException(message, e);
             }
         }
     }

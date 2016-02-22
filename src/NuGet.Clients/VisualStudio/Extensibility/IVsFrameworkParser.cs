@@ -18,7 +18,7 @@ namespace NuGet.VisualStudio
         /// </summary>
         /// <param name="shortOrFullName">The framework string.</param>
         /// <exception cref="ArgumentNullException">If the provided string is null.</exception>
-        /// <exception cref="FormatException">If the provided string cannot be parsed.</exception>
+        /// <exception cref="ArgumentException">If the provided string cannot be parsed.</exception>
         /// <returns>The parsed framework.</returns>
         FrameworkName ParseFrameworkName(string shortOrFullName);
     }
