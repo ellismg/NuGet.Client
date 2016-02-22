@@ -2,9 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace NuGet.VisualStudio
 {
+    [ComImport]
+    [Guid("1AE338E2-9120-4D1A-A779-012FEBEF77FA")]
     public interface IVsSemanticVersionComparer
     {
         /// <summary>
