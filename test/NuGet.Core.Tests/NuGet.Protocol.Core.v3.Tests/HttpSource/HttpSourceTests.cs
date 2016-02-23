@@ -200,11 +200,7 @@ namespace NuGet.Protocol.Core.v3.Tests
             {
                 return stream =>
                 {
-                    var memoryStream = new MemoryStream();
-                    stream.CopyTo(memoryStream);
-                    Console.WriteLine("Bytes: " + BitConverter.ToString(memoryStream.ToArray()));
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    var content = ReadStream(memoryStream);
+                    var content = ReadStream(stream);
 
                     if (content == CacheContent)
                     {
