@@ -3,38 +3,59 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using NuGet.Configuration;
+using NuGet.Protocol.Core.v3;
 
-namespace NuGet.Protocol.Core.v3.Utility
+namespace NuGet.Protocol
 {
-    public static class DownloadUtility
+    public class DownloadUtility
     {
         private const string DownloadTimeoutKey = "nuget_download_timeout";
 
-        private static TimeSpan? downloadTimeout;
+        private IEnvironmentVariableReader _environmentVariableReader;
 
-        private static TimeSpan DownloadTimeout
+        public IEnvironmentVariableReader EnvironmentVariableReader 
         {
             get
             {
-                if (!downloadTimeout.HasValue)
+                if (_environmentVariableReader == null)
                 {
-                    var unparsedTimeout = Environment.GetEnvironmentVariable(DownloadTimeoutKey);
+                    _environmentVariableReader = new EnvironmentVariableWrapper();
+                }
+
+                return _environmentVariableReader;
+            }
+
+            set { _environmentVariableReader = value; }
+        }
+
+        private TimeSpan? _downloadTimeout;
+
+        public TimeSpan DownloadTimeout
+        {
+            get
+            {
+                if (!_downloadTimeout.HasValue)
+                {
+                    var unparsedTimeout = EnvironmentVariableReader.GetEnvironmentVariable(DownloadTimeoutKey);
                     uint timeoutSeconds;
                     if (!uint.TryParse(unparsedTimeout, out timeoutSeconds))
                     {
-                        downloadTimeout = TimeSpan.FromMinutes(5);
+                        _downloadTimeout = TimeSpan.FromMinutes(5);
                     }
                     else
                     {
-                        downloadTimeout = TimeSpan.FromSeconds(timeoutSeconds);
+                        _downloadTimeout = TimeSpan.FromSeconds(timeoutSeconds);
                     }
                 }
 
-                return downloadTimeout.Value;
+                return _downloadTimeout.Value;
             }
+
+            set { _downloadTimeout = value; }
         }
 
-        public static async Task DownloadAsync(Stream source, Stream destination, string downloadName, CancellationToken token)
+        public async Task DownloadAsync(Stream source, Stream destination, string downloadName, CancellationToken token)
         {
             var timeoutMessage = string.Format(
                 CultureInfo.CurrentCulture,

@@ -19,7 +19,6 @@ using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
-using NuGet.Protocol.Core.v3.Utility;
 
 namespace NuGet.Protocol
 {
@@ -424,7 +423,7 @@ namespace NuGet.Protocol
                     {
                         using (var responseStream = await response.Content.ReadAsStreamAsync())
                         {
-                            await DownloadUtility.DownloadAsync(
+                            await new DownloadUtility().DownloadAsync(
                                 responseStream,
                                 stream,
                                 response.RequestMessage.RequestUri.ToString(),

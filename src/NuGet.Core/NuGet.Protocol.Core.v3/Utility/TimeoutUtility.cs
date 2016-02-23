@@ -2,9 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NuGet.Protocol.Core.v3.Utility
+namespace NuGet.Protocol
 {
-    public static class TimeoutUtility
+    public class TimeoutUtility
     {
         /// <summary>
         /// Starts a task with a timeout. If the timeout occurs, a <see cref="TimeoutException"/>

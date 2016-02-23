@@ -6,9 +6,7 @@ using System.Globalization;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Common;
 using NuGet.Protocol.Core.v3;
-using NuGet.Protocol.Core.v3.Utility;
 
 namespace NuGet.Protocol
 {
