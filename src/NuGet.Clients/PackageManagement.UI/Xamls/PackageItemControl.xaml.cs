@@ -31,5 +31,11 @@ namespace NuGet.PackageManagement.UI
         {
             Commands.InstallPackageCommand.Execute(this.DataContext, this);
         }
+
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            var image = sender as Image;
+            image.Source = UriToImageCacheValueConverter.DefaultPackageIcon;
+        }
     }
 }

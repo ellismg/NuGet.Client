@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+
 
 namespace NuGet.PackageManagement.UI
 {
@@ -50,8 +52,8 @@ namespace NuGet.PackageManagement.UI
                     _installedVersion = value;
                     OnPropertyChanged(nameof(InstalledVersion));
                 }
-            }
-        }        
+            }        
+        }
 
         // The version that can be installed or updated to. It is null
         // if the installed version is already the latest.
@@ -262,6 +264,30 @@ namespace NuGet.PackageManagement.UI
         }
 
         public Uri IconUrl { get; set; }
+
+        private static BitmapImage defaultPackageIcon;
+        public static BitmapImage DefaultPackageIcon
+        { 
+            get
+            {
+                if (defaultPackageIcon == null)
+                {
+                    defaultPackageIcon = new BitmapImage();
+                    defaultPackageIcon.BeginInit();
+
+                    // If the DLL name changes, this URI would need to change to match.
+                    defaultPackageIcon.UriSource = new Uri("pack://application:,,,/NuGet.PackageManagement.UI;component/Resources/packageicon.png");
+
+                    // Instead of scaling larger images and keeping larger image in memory, this makes it so we scale it down, and throw away the bigger image.
+                    // Only need to set this on one dimension, to preserve aspect ratio
+                    defaultPackageIcon.DecodePixelWidth = 32;
+ 
+                    defaultPackageIcon.EndInit();
+                }
+
+                return defaultPackageIcon;
+            }
+        }
 
         public Lazy<Task<IEnumerable<VersionInfo>>> Versions { get; set; }
 

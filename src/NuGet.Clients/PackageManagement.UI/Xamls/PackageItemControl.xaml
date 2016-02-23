@@ -32,6 +32,8 @@
         x:Key="StringFormatConverter" />
       <ui:NullToBooleanConverter
         x:Key="NullToBooleanConverter" />
+      <ui:UriToImageCacheValueConverter
+        x:Key="UriToImageCacheValueConverter" />
 
       <!-- style for install, uninstall and update buttons -->
       <Style x:Key="buttonStyle" TargetType="{x:Type Button}">
@@ -109,10 +111,8 @@
                     </Grid.RowDefinitions>
                     <Image
                       Grid.Row="0"
-                      Source="{Binding IconUrl,TargetNullValue={StaticResource BitmapImage_DefaultIcon}}"
-                      Height="32"
-                      Width="32"
-                      RenderOptions.BitmapScalingMode="HighQuality"
+                      Source="{Binding IconUrl,Converter={StaticResource UriToImageCacheValueConverter},TargetNullValue={x:Static ui:UriToImageCacheValueConverter.DefaultPackageIcon}}" 
+                      ImageFailed="Image_ImageFailed"
                       Style="{StaticResource PackageIconImageStyle}"
                       VerticalAlignment="Top"
                       Margin="0,0,16,0" />
