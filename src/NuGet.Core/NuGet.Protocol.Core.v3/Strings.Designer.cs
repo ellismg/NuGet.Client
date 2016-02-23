@@ -159,6 +159,15 @@ namespace NuGet.Protocol.Core.v3 {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to The download of &apos;{0}&apos; took more than {1} second(s) and therefore timed out..
+        /// </summary>
+        internal static string DownloadTimeout {
+            get {
+                return ResourceManager.GetString("DownloadTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to The HTTP request to &apos;{0} {1}&apos; has timed out after {2}{3}..
         /// </summary>
         internal static string Http_Timeout {

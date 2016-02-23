@@ -9,6 +9,7 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Packaging.PackageExtraction;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Core.v3.Utility;
 
 namespace NuGet.Protocol
 {
@@ -107,7 +108,11 @@ namespace NuGet.Protocol
                 xmlDocFileSaveMode: PackageExtractionBehavior.XmlDocFileSaveMode);
 
             await PackageExtractor.InstallFromSourceAsync(
-                stream => packageStream.CopyToAsync(stream, bufferSize: 8192, cancellationToken: token),
+                stream => DownloadUtility.DownloadAsync(
+                    packageStream,
+                    stream,
+                    packageIdentity.ToString(),
+                    token),
                 versionFolderPathContext,
                 token: token);
 

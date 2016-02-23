@@ -19,6 +19,7 @@ using NuGet.Configuration;
 using NuGet.Logging;
 using NuGet.Protocol.Core.Types;
 using NuGet.Protocol.Core.v3;
+using NuGet.Protocol.Core.v3.Utility;
 
 namespace NuGet.Protocol
 {
@@ -423,8 +424,11 @@ namespace NuGet.Protocol
                     {
                         using (var responseStream = await response.Content.ReadAsStreamAsync())
                         {
-                            await responseStream.CopyToAsync(stream, bufferSize: 8192, cancellationToken: token);
-                            await stream.FlushAsync(cancellationToken);
+                            await DownloadUtility.DownloadAsync(
+                                responseStream,
+                                stream,
+                                response.RequestMessage.RequestUri.ToString(),
+                                token);
                         }
                     }
 
