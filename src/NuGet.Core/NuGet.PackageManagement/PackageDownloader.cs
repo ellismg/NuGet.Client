@@ -201,7 +201,25 @@ namespace NuGet.PackageManagement
                 logger,
                 token);
 
-            if (result == null || result.Type != DownloadResourceResultType.Available)
+            if (result.Type == DownloadResourceResultType.Cancelled)
+            {
+                throw new FatalProtocolException(String.Format(
+                    CultureInfo.CurrentCulture,
+                    Strings.PackageCancelledFromSource,
+                    packageIdentity,
+                    sourceRepository.PackageSource.Source));
+            }
+
+            if (result.Type == DownloadResourceResultType.NotFound)
+            {
+                throw new FatalProtocolException(String.Format(
+                    CultureInfo.CurrentCulture,
+                    Strings.PackageNotFoundOnSource,
+                    packageIdentity,
+                    sourceRepository.PackageSource.Source));
+            }
+
+            if (result == null)
             {
                 throw new FatalProtocolException(string.Format(
                     CultureInfo.CurrentCulture,
