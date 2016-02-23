@@ -76,13 +76,9 @@ namespace NuGet.Protocol.Core.v3
         {
             try
             {
-                using (var reader = new StreamReader(
-                    stream: stream,
-                    encoding: Encoding.UTF8,
-                    detectEncodingFromByteOrderMarks: false,
-                    bufferSize: 4096,
-                    leaveOpen: true))
-                using (var xmlReader = XmlReader.Create(reader))
+                using (var xmlReader = XmlReader.Create(
+                    input: stream,
+                    settings: new XmlReaderSettings { CloseInput = false }))
                 {
                     while (xmlReader.Read())
                     {
