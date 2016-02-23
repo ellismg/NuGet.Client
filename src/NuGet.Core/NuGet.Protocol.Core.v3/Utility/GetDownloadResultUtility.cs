@@ -51,7 +51,10 @@ namespace NuGet.Protocol
                         return downloadResult;
                     }
                 }
-                catch (IOException ex) when (ex.InnerException is SocketException && i < 2)
+                catch (Exception ex) when ((
+                        (ex is IOException && ex.InnerException is SocketException)
+                        || ex is TimeoutException)
+                    && i < 2)
                 {
                     string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri)
                         + Environment.NewLine
