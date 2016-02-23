@@ -120,7 +120,7 @@ namespace NuGet.Protocol
 
                 response.EnsureSuccessStatusCode();
 
-                await CreateCacheFile(result, response, cacheContext, cancellationToken);
+                await CreateCacheFile(uri, result, response, cacheContext, cancellationToken);
 
                 log.LogInformation(string.Format(CultureInfo.InvariantCulture,
                     _responseLogFormat, response.StatusCode, uri, sw.ElapsedMilliseconds));
@@ -388,11 +388,7 @@ namespace NuGet.Protocol
             _lastAuthId = Guid.NewGuid();
         }
 
-        private static Task CreateCacheFile(
-            HttpSourceResult result,
-            HttpResponseMessage response,
-            HttpSourceCacheContext context,
-            CancellationToken cancellationToken)
+        private static Task CreateCacheFile(string uri, HttpSourceResult result, HttpResponseMessage response, HttpSourceCacheContext context, CancellationToken cancellationToken)
         {
             var newFile = result.CacheFileName + "-new";
 
@@ -426,7 +422,7 @@ namespace NuGet.Protocol
                             await new DownloadUtility().DownloadAsync(
                                 responseStream,
                                 stream,
-                                response.RequestMessage.RequestUri.ToString(),
+                                uri,
                                 token);
                         }
                     }
