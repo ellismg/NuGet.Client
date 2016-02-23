@@ -64,6 +64,23 @@ namespace NuGet.Protocol.Core.v3.Tests
             Assert.Equal("The download of 'test' took more than 500ms and therefore timed out.", actual.Message);
         }
 
+        [Fact]
+        public async Task DownloadUtility_AllowsNormalDownload()
+        {
+            // Arrange
+            var target = new DownloadUtility();
+            var expected = "test content";
+            var source = new MemoryStream(Encoding.UTF8.GetBytes(expected));
+            var destination = new MemoryStream();
+
+            // Act
+            await target.DownloadAsync(source, destination, "test", CancellationToken.None);
+
+            // Assert
+            var actual = Encoding.UTF8.GetString(destination.ToArray());
+            Assert.Equal(expected, actual);
+        }
+
         private static void VerifyEnvironmentVariable(string value, TimeSpan expected)
         {
             // Arrange
