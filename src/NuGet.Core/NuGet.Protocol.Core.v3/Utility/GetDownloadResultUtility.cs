@@ -60,11 +60,8 @@ namespace NuGet.Protocol
                 }
                 catch (Exception ex)
                 {
-                    // This is logged as information (not error) because package downloads are typically done
-                    // acrosss multiple sources. If this one source fails, another source could still succeed,
-                    // meaning that the user's intended action may not fail.
                     string message = string.Format(CultureInfo.CurrentCulture, Strings.Log_ErrorDownloading, identity, uri);
-                    logger.LogInformation(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
+                    logger.LogError(message + Environment.NewLine + ExceptionUtilities.DisplayMessage(ex));
 
                     throw new FatalProtocolException(message, ex);
                 }
