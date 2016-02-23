@@ -253,6 +253,6 @@
     <value>Can't find Package '{0}' from source '{1}'.</value>
   </data>
   <data name="DownloadTimeout" xml:space="preserve">
-    <value>The download of '{0}' took more than {1} second(s) and therefore timed out.</value>
+    <value>The download of '{0}' took more than {1}{2} and therefore timed out.</value>
   </data>
 </root>

@@ -11,52 +11,47 @@ namespace NuGet.Protocol.Core.v3.Tests
 {
     public class DownloadUtilityTests
     {
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+
         [Fact]
         public void DownloadUtility_ReadsEnvironmentVariable()
         {
-            // Arrange
-            var mock = new Mock<IEnvironmentVariableReader>();
-            mock.Setup(x => x.GetEnvironmentVariable(It.IsAny<string>())).Returns("1");
-
-            var target = new DownloadUtility { EnvironmentVariableReader = mock.Object };
-
-            // Act
-            var actual = target.DownloadTimeout;
-
-            // Assert
-            Assert.Equal(TimeSpan.FromSeconds(1), actual);
-            mock.Verify(x => x.GetEnvironmentVariable("nuget_download_timeout"), Times.Exactly(1));
+            VerifyEnvironmentVariable("42", TimeSpan.FromMilliseconds(42));
         }
 
         [Fact]
-        public void DownloadUtility_DefaultTimeout()
+        public void DownloadUtility_DefaultTimeoutWhenInvalid()
         {
-            // Arrange
-            var mock = new Mock<IEnvironmentVariableReader>();
-            mock.Setup(x => x.GetEnvironmentVariable(It.IsAny<string>())).Returns(string.Empty);
+            VerifyEnvironmentVariable("10.99", DefaultTimeout);
+        }
 
-            var target = new DownloadUtility { EnvironmentVariableReader = mock.Object };
+        [Fact]
+        public void DownloadUtility_DefaultTimeoutWhenEmpty()
+        {
+            VerifyEnvironmentVariable("", DefaultTimeout);
+        }
 
-            // Act
-            var actual = target.DownloadTimeout;
+        [Fact]
+        public void DownloadUtility_NegativeDisablesTimeout()
+        {
+            VerifyEnvironmentVariable("-42", Timeout.InfiniteTimeSpan);
+        }
 
-            // Assert
-            Assert.Equal(TimeSpan.FromMinutes(5), actual);
-            mock.Verify(x => x.GetEnvironmentVariable("nuget_download_timeout"), Times.Exactly(1));
+        [Fact]
+        public void DownloadUtility_ZeroDisablesTimeout()
+        {
+            VerifyEnvironmentVariable("0", Timeout.InfiniteTimeSpan);
         }
 
         [Fact]
         public async Task DownloadUtility_TimesOut()
         {
             // Arrange
-            var mock = new Mock<IEnvironmentVariableReader>();
-            mock.Setup(x => x.GetEnvironmentVariable(It.IsAny<string>())).Returns("1");
-
-            var target = new DownloadUtility { EnvironmentVariableReader = mock.Object };
+            var target = new DownloadUtility { DownloadTimeout = TimeSpan.FromMilliseconds(500) };
             var content = "test content";
             var source = new SlowStream(new MemoryStream(Encoding.UTF8.GetBytes(content)))
             {
-                DelayPerByte = TimeSpan.FromMinutes(250)
+                DelayPerByte = TimeSpan.FromMilliseconds(100)
             };
             var destination = new MemoryStream();
 
@@ -66,7 +61,23 @@ namespace NuGet.Protocol.Core.v3.Tests
                 await target.DownloadAsync(source, destination, "test", CancellationToken.None);
             });
 
-            Assert.Equal("The download of 'test' took more than 1 second(s) and therefore timed out.", actual.Message);
+            Assert.Equal("The download of 'test' took more than 500ms and therefore timed out.", actual.Message);
+        }
+
+        private static void VerifyEnvironmentVariable(string value, TimeSpan expected)
+        {
+            // Arrange
+            var mock = new Mock<IEnvironmentVariableReader>();
+            mock.Setup(x => x.GetEnvironmentVariable(It.IsAny<string>())).Returns(value);
+
+            var target = new DownloadUtility { EnvironmentVariableReader = mock.Object };
+
+            // Act
+            var actual = target.DownloadTimeout;
+
+            // Assert
+            Assert.Equal(expected, actual);
+            mock.Verify(x => x.GetEnvironmentVariable("nuget_download_timeout"), Times.Exactly(1));
         }
 
         private class SlowStream : Stream

@@ -38,18 +38,18 @@ namespace NuGet.Protocol
                 if (!_downloadTimeout.HasValue)
                 {
                     var unparsedTimeout = EnvironmentVariableReader.GetEnvironmentVariable(DownloadTimeoutKey);
-                    int timeoutSeconds;
-                    if (!int.TryParse(unparsedTimeout, out timeoutSeconds))
+                    int timeoutMilliseconds;
+                    if (!int.TryParse(unparsedTimeout, out timeoutMilliseconds))
                     {
                         _downloadTimeout = TimeSpan.FromMinutes(5);
                     }
-                    else if(timeoutSeconds <= 0)
+                    else if(timeoutMilliseconds <= 0)
                     {
                         _downloadTimeout = Timeout.InfiniteTimeSpan;
                     }
                     else
                     {
-                        _downloadTimeout = TimeSpan.FromSeconds(timeoutSeconds);
+                        _downloadTimeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
                     }
                 }
 
@@ -65,7 +65,8 @@ namespace NuGet.Protocol
                 CultureInfo.CurrentCulture,
                 Strings.DownloadTimeout,
                 downloadName,
-                (int) DownloadTimeout.TotalSeconds);
+                (int) DownloadTimeout.TotalMilliseconds,
+                Strings.Milliseconds);
 
             await TimeoutUtility.StartWithTimeout(
                 timeoutToken => source.CopyToAsync(destination, bufferSize: 8192, cancellationToken: timeoutToken),
