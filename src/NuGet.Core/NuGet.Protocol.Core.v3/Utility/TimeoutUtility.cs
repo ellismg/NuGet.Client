@@ -15,7 +15,13 @@ namespace NuGet.Protocol
             TimeSpan timeout,
             string timeoutMessage,
             CancellationToken token)
-        {                        
+        {
+            // Support infinite timeout
+            if (timeout == Timeout.InfiniteTimeSpan)
+            {
+                return await getTask(token);
+            }
+                               
             /*
              * Implement timeout. Two operations are started and run in parallel:
              *

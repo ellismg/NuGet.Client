@@ -38,10 +38,14 @@ namespace NuGet.Protocol
                 if (!_downloadTimeout.HasValue)
                 {
                     var unparsedTimeout = EnvironmentVariableReader.GetEnvironmentVariable(DownloadTimeoutKey);
-                    uint timeoutSeconds;
-                    if (!uint.TryParse(unparsedTimeout, out timeoutSeconds))
+                    int timeoutSeconds;
+                    if (!int.TryParse(unparsedTimeout, out timeoutSeconds))
                     {
                         _downloadTimeout = TimeSpan.FromMinutes(5);
+                    }
+                    else if(timeoutSeconds <= 0)
+                    {
+                        _downloadTimeout = Timeout.InfiniteTimeSpan;
                     }
                     else
                     {
