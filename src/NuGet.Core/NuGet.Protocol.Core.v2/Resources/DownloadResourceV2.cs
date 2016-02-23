@@ -210,7 +210,7 @@ namespace NuGet.Protocol.Core.v2
                 }
             }
 
-            return null;
+            return new DownloadResourceResult(DownloadResourceResultType.NotFound);
         }
 
         /// <summary>

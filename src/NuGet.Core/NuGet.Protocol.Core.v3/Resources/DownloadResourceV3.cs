@@ -121,12 +121,12 @@ namespace NuGet.Protocol.Core.v3
 
             var uri = await GetDownloadUrl(identity, logger, token);
 
-            if (uri != null)
+            if (uri == null)
             {
-                return await GetDownloadResultUtility.GetDownloadResultAsync(_client, identity, uri, settings, logger, token);
+                return new DownloadResourceResult(DownloadResourceResultType.NotFound);
             }
 
-            return null;
+            return await GetDownloadResultUtility.GetDownloadResultAsync(_client, identity, uri, settings, logger, token);
         }
     }
 }

@@ -168,9 +168,14 @@ namespace NuGet.Protocol
             return SendAsync(requestFactory, log, token);
         }
 
-        public async Task<Stream> GetStreamAsync(Uri uri, ILogger log, CancellationToken token)
+        public async Task<Stream> GetStreamAsync(Uri uri, bool ignoreNotFounds, ILogger log, CancellationToken token)
         {
             var response = await GetAsync(uri, log, token);
+
+            if (ignoreNotFounds && response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
 
             response.EnsureSuccessStatusCode();
 

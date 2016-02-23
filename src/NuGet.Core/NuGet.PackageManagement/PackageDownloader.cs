@@ -193,14 +193,15 @@ namespace NuGet.PackageManagement
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Strings.DownloadResourceNotFound, sourceRepository.PackageSource.Source));
             }
 
-            DownloadResourceResult result = null;
-
             token.ThrowIfCancellationRequested();
 
-            result
-                = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, settings, logger, token);
+            var result = await downloadResource.GetDownloadResourceResultAsync(
+                packageIdentity,
+                settings,
+                logger,
+                token);
 
-            if (result == null)
+            if (result == null || result.Type != DownloadResourceResultType.Available)
             {
                 throw new FatalProtocolException(string.Format(
                     CultureInfo.CurrentCulture,
