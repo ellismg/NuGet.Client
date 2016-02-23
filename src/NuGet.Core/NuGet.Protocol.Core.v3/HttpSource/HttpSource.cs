@@ -181,6 +181,7 @@ namespace NuGet.Protocol
         public async Task<Stream> GetStreamAsync(Uri uri, ILogger log, CancellationToken token)
         {
             var response = await GetAsync(uri, log, token);
+
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadAsStreamAsync();
@@ -202,6 +203,8 @@ namespace NuGet.Protocol
                 {
                     return null;
                 }
+
+                response.EnsureSuccessStatusCode();
 
                 using (var stream = await response.Content.ReadAsStreamAsync())
                 using (var reader = new StreamReader(stream))
